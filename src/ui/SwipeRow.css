@@ -1,0 +1,139 @@
+/*
+ * Строка со свайпами. Сдвиг задаёт одна переменная --x на строке (px или «±100%»):
+ * содержимое едет на --x, кнопки слева и справа «приклеены» к его краю и выезжают из-под него.
+ * Анимируется только transform.
+ */
+
+.swipe-row {
+  /* Ширина кнопки — как ACTION_W в SwipeRow.tsx */
+  --swipe-action-w: 80px;
+  --x: 0px;
+  position: relative;
+  overflow: hidden;
+  /* clip, а не hidden: фокус на спрятанной кнопке не прокручивает строку вбок */
+  overflow: clip;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.swipe-row__content {
+  position: relative;
+  z-index: 1;
+  background: var(--swipe-bg, var(--surface));
+  transform: translate3d(var(--x), 0, 0);
+  transition: transform var(--dur-2) var(--ease-ios);
+}
+
+.swipe-row__actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  /* Под кнопками — цвет крайнего действия: при полном свайпе нет просветов */
+  background: var(--edge-bg);
+  transition: transform var(--dur-2) var(--ease-ios);
+}
+
+.swipe-row__actions--leading {
+  transform: translate3d(calc(var(--x) - 100%), 0, 0);
+}
+
+.swipe-row__actions--trailing {
+  transform: translate3d(calc(100% + var(--x)), 0, 0);
+}
+
+/* Пока палец тянет строку — без анимации, точно за пальцем */
+.swipe-row.is-dragging .swipe-row__content,
+.swipe-row.is-dragging .swipe-row__actions {
+  transition: none;
+}
+
+.swipe-action {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  width: var(--swipe-action-w);
+  background: var(--tone);
+  color: var(--on-accent);
+  transition: transform var(--dur-1) var(--ease-ios);
+}
+
+/* Крайняя кнопка тянется до края строки, подпись остаётся у содержимого */
+.swipe-action--edge {
+  flex: 1 1 auto;
+  z-index: 1;
+}
+
+.swipe-row__actions--leading .swipe-action--edge {
+  justify-content: flex-end;
+}
+
+.swipe-row__actions--trailing .swipe-action--edge {
+  justify-content: flex-start;
+}
+
+/* Дальше порога полного свайпа крайняя кнопка накрывает соседнюю */
+.swipe-row.is-armed .swipe-action--edge {
+  transform: translate3d(var(--cover, 0px), 0, 0);
+}
+
+.swipe-action__inner {
+  flex: none;
+  width: var(--swipe-action-w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 2px;
+}
+
+.swipe-action__icon {
+  transition: transform var(--dur-1) var(--ease-ios);
+}
+
+.swipe-row.is-armed .swipe-action--edge .swipe-action__icon {
+  transform: scale(1.15);
+}
+
+.swipe-action__label {
+  max-width: 100%;
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+  font-weight: 600;
+  letter-spacing: var(--ls-small);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.swipe-action:active .swipe-action__inner {
+  opacity: 0.7;
+}
+
+.swipe-action:focus-visible {
+  outline: 3px solid var(--on-accent);
+  outline-offset: -5px;
+  border-radius: 0;
+}
+
+/* ---------- Подтверждение в шторке ---------- */
+.swipe-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-1);
+}
+
+.swipe-confirm__context {
+  margin-bottom: var(--space-2);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.btn.swipe-confirm__destructive {
+  background: var(--danger-fill);
+  color: var(--on-accent);
+}

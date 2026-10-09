@@ -1,0 +1,25 @@
+/* Колонка «Ближайшее»: компактные строки (мельче, чем в основных списках). */
+
+.upcoming .group {
+  margin-bottom: 0;
+}
+
+.upcoming__row .cell__content {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* Свой размер текста у заголовка и подписи: блоком, чтобы строку не растягивала высота 17 px родителя */
+.upcoming__row .cell__title > span,
+.upcoming__row .cell__subtitle > span {
+  display: block;
+}
+
+.upcoming__title {
+  font-weight: 500;
+}
+
+.upcoming__due.is-overdue {
+  color: var(--danger);
+  font-weight: 500;
+}

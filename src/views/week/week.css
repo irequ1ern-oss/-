@@ -1,0 +1,248 @@
+/* Экран «Неделя»: полоса дней и листаемый список пар. Цвета — только из tokens.css. */
+
+.week-above {
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+/* ---------- Верхняя панель: «Сегодня» и ‹ › ---------- */
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.week-nav__today.btn {
+  padding: 0 var(--space-4);
+  font-size: var(--fs-subhead);
+}
+
+/*
+ * Кнопки справа шире половины панели на телефоне: правая колонка не сжимается меньше кнопок,
+ * а маленький заголовок недели обрезается многоточием (иначе кнопки наезжают на него).
+ */
+.week-screen .navbar__side--end {
+  min-width: max-content;
+}
+
+/* Две стрелки в одной стеклянной капсуле, как группа кнопок в панели iOS */
+.week-nav__arrows {
+  display: flex;
+  border-radius: var(--r-pill);
+}
+
+.week-nav__arrow.icon-btn {
+  color: var(--label);
+}
+
+/* ---------- Полоса дней ---------- */
+.week-strip {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+/* Суббота или воскресенье с парами: дней больше — промежутки уже, капсулы не меньше 44 px */
+.week-strip--dense {
+  gap: var(--space-1);
+}
+
+.day-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  border-radius: var(--r-group);
+  color: var(--label);
+}
+
+.day-pill__box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 60px;
+  padding: var(--space-2) 2px;
+  border-radius: var(--r-group);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+}
+
+.day-pill__wd {
+  font-size: var(--fs-footnote);
+  line-height: var(--lh-footnote);
+  letter-spacing: var(--ls-small);
+  font-weight: 500;
+  color: var(--label-2);
+}
+
+.day-pill__num {
+  font-size: var(--fs-title3);
+  line-height: var(--lh-title3);
+  letter-spacing: var(--ls-title);
+  font-weight: 600;
+}
+
+.day-pill.is-today .day-pill__wd,
+.day-pill.is-today .day-pill__num {
+  color: var(--accent);
+}
+
+.day-pill.is-selected .day-pill__box {
+  background: var(--accent-fill);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.day-pill.is-selected .day-pill__wd,
+.day-pill.is-selected .day-pill__num {
+  color: var(--on-accent);
+}
+
+/* Точки под днём: место есть всегда, чтобы капсулы не прыгали */
+.day-pill__dots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  height: 6px;
+}
+
+.day-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.day-pill__dot--changes {
+  background: var(--warning);
+}
+
+.day-pill__dot--homework {
+  background: var(--accent);
+}
+
+/* ---------- Лента дней (свайп) ---------- */
+/* Окно ленты шире контента на поля экрана: соседний день прячется точно за краем */
+.week-pager {
+  margin: 0 calc(-1 * var(--gutter));
+  padding: 0 var(--gutter);
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Обрезаем только по горизонтали — тени карточек и высокий соседний день не срезаются снизу */
+@supports (overflow: clip) {
+  .week-pager {
+    overflow: visible;
+    overflow-x: clip;
+  }
+}
+
+.week-track {
+  position: relative;
+}
+
+.week-track[data-moving] {
+  will-change: transform;
+}
+
+.week-panel--side {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.week-track[data-moving] > .week-panel--side {
+  display: block;
+}
+
+.week-panel--prev {
+  transform: translateX(calc(-100% - 2 * var(--gutter)));
+}
+
+.week-panel--next {
+  transform: translateX(calc(100% + 2 * var(--gutter)));
+}
+
+/* Пока лента едет, строка под пальцем не подсвечивается как нажатая */
+.week-track[data-moving] .cell__row:active {
+  background: transparent;
+}
+
+/* ---------- Выбранный день ---------- */
+.week-day__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.week-day__title {
+  min-width: 0;
+}
+
+.week-day__tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  margin-left: var(--space-2);
+  padding: 0 7px;
+  border-radius: var(--r-pill);
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-weight: 600;
+  vertical-align: 2px;
+}
+
+.week-day__count {
+  flex: none;
+}
+
+/*
+ * Плашка «Есть изменения». Оттенок --warning на непрозрачной карточке, а не на фоне экрана:
+ * так текст --warning проходит AA (4.5:1) и в светлой теме.
+ */
+.week-changes {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+  margin-bottom: var(--space-3);
+  padding: 10px var(--space-4);
+  border-radius: var(--r-group);
+  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+  color: var(--warning);
+}
+
+.week-changes__icon {
+  flex: none;
+}
+
+.week-changes__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.week-changes__title {
+  font-weight: 600;
+}
+
+.week-homework {
+  margin-top: var(--space-6);
+}
+
+.week-panel > .group:last-child,
+.week-panel > .empty-state:last-child {
+  margin-bottom: 0;
+}

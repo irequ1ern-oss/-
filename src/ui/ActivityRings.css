@@ -1,0 +1,43 @@
+.activity-rings {
+  flex: none;
+  width: var(--size);
+  height: var(--size);
+}
+
+.activity-rings svg {
+  display: block;
+  /* Начало колец — сверху */
+  transform: rotate(-90deg);
+}
+
+.activity-rings circle {
+  fill: none;
+}
+
+.activity-rings__track {
+  stroke: var(--ring-track);
+}
+
+.activity-rings__base,
+.activity-rings__value {
+  stroke: var(--ring);
+}
+
+.activity-rings__value {
+  stroke-linecap: round;
+  /* Заполнение при появлении и при изменении; при «уменьшении движения» токены сокращают до 1 мс */
+  transition: stroke-dashoffset calc(var(--dur-3) * 2) var(--ease-ios);
+}
+
+/* Конец второго круга: кружок цвета кольца с тенью, как в «Активности»; появляется после заполнения */
+.activity-rings__cap {
+  fill: var(--ring);
+  filter: drop-shadow(0 0 2px var(--overlay));
+  animation: activity-rings-cap var(--dur-2) var(--ease-ios) calc(var(--dur-3) * 2) both;
+}
+
+@keyframes activity-rings-cap {
+  from {
+    opacity: 0;
+  }
+}

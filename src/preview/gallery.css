@@ -1,0 +1,352 @@
+/* Страница превью дизайна. Цвета, тени, радиусы и размеры текста — только из tokens.css. */
+
+.gal {
+  /* Высота верхней панели: на неё отступаем, когда прокручиваем к разделу */
+  --bar-space: 112px;
+  --gal-max: 1400px;
+  min-height: 100dvh;
+}
+
+/* ---------- Верхняя стеклянная панель ---------- */
+.gal-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: calc(env(safe-area-inset-top) + var(--space-2)) var(--gutter) var(--space-2);
+  border-radius: 0;
+  border-width: 0 0 0.5px;
+  border-color: var(--separator);
+  box-shadow: none;
+}
+
+.gal-bar__inner {
+  max-width: var(--gal-max);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gal-bar__title {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 600px) {
+  .gal {
+    --bar-space: 76px;
+  }
+  .gal-bar__inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+  .gal-bar__theme {
+    flex: 0 1 400px;
+    min-width: 0;
+  }
+}
+
+/* ---------- Содержимое ---------- */
+.gal-main {
+  max-width: var(--gal-max);
+  margin: 0 auto;
+  padding: var(--space-5) var(--gutter) calc(var(--space-8) * 2 + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space-8) + var(--space-4));
+}
+
+.gal-section {
+  min-width: 0;
+  scroll-margin-top: var(--bar-space);
+}
+
+.gal-intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: var(--content-max);
+}
+
+.gal-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.gal-toc__num {
+  margin-right: 6px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Заголовок раздела: номер в кружке (на него удобно ссылаться в правках) */
+.gal-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0 var(--space-1) var(--space-3);
+}
+
+.gal-head__title {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.gal-head__num {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font-size: var(--fs-subhead);
+  line-height: 1;
+  font-weight: 700;
+}
+
+.gal-head__text {
+  max-width: var(--content-max);
+}
+
+/* ---------- Кнопки состояний (капсулы) ---------- */
+.gal-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+
+.gal-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  color: var(--label);
+  text-decoration: none;
+  border-radius: var(--r-pill);
+}
+
+.gal-chip__pill {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.gal-chip.is-active .gal-chip__pill {
+  background: var(--accent-fill);
+  border-color: transparent;
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.gal-orient {
+  max-width: 360px;
+  margin-bottom: var(--space-2);
+}
+
+/* ---------- Рамки устройств ---------- */
+.gal-devices {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space-8) + var(--space-4));
+}
+
+.device-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.device {
+  --device-r: calc(var(--r-card) * 2);
+  padding: var(--space-2);
+  border: 1px solid var(--separator);
+  border-radius: calc(var(--device-r) * var(--s, 1) + var(--space-2));
+  background: var(--surface-3);
+  box-shadow: var(--shadow-float);
+}
+
+.device--tablet {
+  --device-r: var(--r-sheet);
+}
+
+.device__screen {
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(var(--device-r) * var(--s, 1));
+  background: var(--bg);
+  /* Скругление обрезает фрейм и в Safari */
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+.device__screen iframe {
+  display: block;
+  border: 0;
+  transform-origin: 0 0;
+}
+
+.device-slot__meta {
+  text-align: center;
+}
+
+.gal-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-1);
+  text-align: center;
+}
+
+.gal-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--r-sm);
+}
+
+/* ---------- Главный блок в пяти состояниях ---------- */
+.gal-heroes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  gap: var(--space-6) var(--space-5);
+  align-items: start;
+}
+
+.gal-hero {
+  margin: 0;
+  min-width: 0;
+}
+
+.gal-hero .hero {
+  margin-bottom: 0;
+}
+
+.gal-hero__cap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 var(--space-1) var(--space-2);
+}
+
+.gal-hero__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+}
+
+/* ---------- Списки в две колонки на широком экране ---------- */
+.gal-cols {
+  display: grid;
+  gap: 0 var(--space-5);
+  align-items: start;
+}
+
+.gal-linkrow {
+  text-decoration: none;
+}
+
+.gal-subject__full {
+  display: block;
+}
+
+.gal-subject__color {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.gal-subject__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+/* ---------- Палитра ---------- */
+.gal-palette {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-4) var(--space-3);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: var(--space-4) var(--space-2);
+}
+
+.gal-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  text-align: center;
+  color: var(--label-2);
+}
+
+.gal-swatch__chip {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  border-radius: var(--r-icon);
+  background: var(--c);
+  box-shadow: var(--icon-edge);
+}
+
+/* ---------- Элементы ---------- */
+.gal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  gap: 0 var(--space-5);
+  align-items: start;
+}
+
+.gal-pad {
+  padding: var(--space-3) var(--space-4);
+}
+
+.gal-pad + .gal-pad {
+  border-top: 0.5px solid var(--separator);
+}
+
+.gal-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ---------- Планшет и ПК: телефон и планшет рядом ---------- */
+@media (min-width: 1000px) {
+  .gal-devices {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    gap: var(--space-8);
+    align-items: start;
+  }
+  .gal-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
