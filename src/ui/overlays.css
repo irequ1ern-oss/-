@@ -84,6 +84,12 @@
   width: var(--tap-min);
   height: var(--tap-min);
   color: var(--label-2);
+  font-weight: 700;
+}
+
+.sheet__close .icon {
+  stroke: currentColor;
+  stroke-width: 12px;
 }
 
 .sheet__close::before {

@@ -98,7 +98,7 @@ function Sheet({ spec, depth }: { spec: SheetSpec; depth: number }) {
           <div class="sheet__titlebar">
             {spec.title && <h2 class="t-headline sheet__title">{spec.title}</h2>}
             <button class="sheet__close pressable" onClick={close} aria-label="Закрыть">
-              <Icon name="x" size={16} weight="fill" />
+              <Icon name="x" size={15} />
             </button>
           </div>
         </div>
