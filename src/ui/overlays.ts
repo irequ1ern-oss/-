@@ -12,6 +12,10 @@ export interface SheetSpec {
   content: () => ComponentChildren;
   /** Подпись для экранного диктора, если нет заголовка. */
   label?: string;
+  /** Вызывается, когда шторку закрыли (любым способом). */
+  onClose?: () => void;
+  /** Шторка уезжает (закрыта из кода через dismissSheet). */
+  leaving?: boolean;
 }
 
 export interface MenuItem {
@@ -70,9 +74,17 @@ export function openSheet(spec: Omit<SheetSpec, 'id'>): number {
   return id;
 }
 
+/** Убирает шторку сразу (OverlayHost вызывает это после анимации). */
 export function closeSheet(id?: number) {
-  const sheets = id === undefined ? state.sheets.slice(0, -1) : state.sheets.filter((s) => s.id !== id);
-  set({ sheets });
+  const target = id ?? state.sheets[state.sheets.length - 1]?.id;
+  const removed = state.sheets.filter((s) => s.id === target);
+  set({ sheets: state.sheets.filter((s) => s.id !== target) });
+  removed.forEach((s) => s.onClose?.());
+}
+
+/** Закрывает шторку из кода — с анимацией, как будто нажали «×». */
+export function dismissSheet(id: number) {
+  set({ sheets: state.sheets.map((s) => (s.id === id ? { ...s, leaving: true } : s)) });
 }
 
 export function openContextMenu(spec: ContextMenuSpec) {

@@ -213,7 +213,8 @@ function FullScreenLink({ frame, state, theme }: { frame: RefObject<HTMLIFrameEl
         (e.currentTarget as HTMLAnchorElement).href = appUrl(APP_BASE, { state, theme, hash: frameHash(frame.current) });
       }}
     >
-      Открыть на весь экран ↗
+      Открыть на весь экран
+      <Icon name="arrow-square-out" size={18} />
     </a>
   );
 }

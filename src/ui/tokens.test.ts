@@ -31,6 +31,13 @@ function contrast(a: string, b: string): number {
   return (x + 0.05) / (y + 0.05);
 }
 
+/** Цвет fg с прозрачностью alpha поверх bg (как color-mix(in srgb, fg alpha%, bg)). */
+function mix(fg: string, bg: string, alpha: number): string {
+  const ch = (h: string, i: number) => parseInt(h.slice(i, i + 2), 16);
+  const out = [1, 3, 5].map((i) => Math.round(ch(fg, i) * alpha + ch(bg, i) * (1 - alpha)));
+  return `#${out.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+}
+
 const TEXT_PAIRS: [string, string][] = [
   ['label', 'bg'], ['label', 'surface'], ['label', 'surface-2'],
   ['label-2', 'bg'], ['label-2', 'surface'],
@@ -51,6 +58,14 @@ describe.each(['light', 'dark', 'amoled'] as const)('тема %s', (theme) => {
 
   it.each(WHITE_ON)('белый текст на %s ≥ 4.5', (bg) => {
     expect(contrast('#ffffff', v[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // Метки «замена», «отменена» и плашка изменений: цветной текст на своём же бледном оттенке.
+  it.each([
+    ['warning', 0.16, 'surface'], ['warning', 0.16, 'bg'],
+    ['danger', 0.14, 'surface'], ['danger', 0.14, 'bg'],
+  ] as const)('%s на своём оттенке %s поверх %s ≥ 4.5', (fg, alpha, bg) => {
+    expect(contrast(v[fg], mix(v[fg], v[bg], alpha))).toBeGreaterThanOrEqual(4.5);
   });
 
   it('все 13 цветов предметов заданы', () => {

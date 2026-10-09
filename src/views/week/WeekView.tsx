@@ -6,6 +6,7 @@ import { resolveDay } from '../../core/schedule';
 import { defaultStripDay, shiftStripDay, weekDays } from '../../core/week';
 import { formatWeekRange } from '../../core/format';
 import { startOfWeek, type DateStr } from '../../core/time';
+import { useHomework } from '../homework/store';
 import { useAppData } from '../../shell/app';
 import { useClock } from '../../shell/clock';
 import { Screen } from '../../ui/Screen';
@@ -25,7 +26,8 @@ let remembered: { date: DateStr; today: DateStr } | null = null;
 
 export function WeekView() {
   const clock = useClock('minute');
-  const { src, homework } = useAppData();
+  const { src } = useAppData();
+  const [homework] = useHomework();
   const defaultDay = useMemo(() => defaultStripDay(clock.date, src), [clock.date, src]);
   const [selected, setSelected] = useState<DateStr>(() =>
     remembered && remembered.today === clock.date ? remembered.date : defaultDay,

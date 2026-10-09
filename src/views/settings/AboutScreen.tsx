@@ -97,7 +97,7 @@ export function AboutScreen({ back }: { back?: BackInfo }) {
                   <span class="cell__title">Исходный код</span>
                 </span>
                 <span class="cell__value">GitHub</span>
-                <Icon name="caret-right" size={16} class="cell__chevron" />
+                <Icon name="arrow-square-out" size={18} class="cell__chevron" />
               </span>
             </a>
           </div>

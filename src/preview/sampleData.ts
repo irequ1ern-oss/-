@@ -26,6 +26,8 @@ export function sampleHomework(today: DateStr): HomeworkItem[] {
     { id: 'h5', subjectId: 'lang', title: 'Перевод текста, упр. 7', due: d(6), done: false },
     { id: 'h6', subjectId: 'matved', title: 'Таблица свойств сплавов', due: d(-2), done: true },
     { id: 'h7', subjectId: 'obp', title: 'Карта потока создания ценности', due: d(-3), done: true },
+    { id: 'h8', subjectId: 'mdk0402', title: 'Отчёт по лабораторной №2', due: d(0), done: true },
+    { id: 'h9', subjectId: 'bzh', title: 'Тест по первой помощи', due: d(2), done: true },
   ];
 }
 

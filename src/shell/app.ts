@@ -14,6 +14,8 @@ export interface HomeworkItem {
   title: string;
   due: DateStr;
   done: boolean;
+  /** Когда отметили выполненным (для «вовремя» и серии без просрочек). */
+  doneAt?: DateStr;
 }
 
 /** Событие: контрольная, зачёт, сдача работы (этап 3). */
@@ -58,7 +60,3 @@ export function useSubject(id: string): SubjectView {
   return subjectView(id, main, settings);
 }
 
-/** Невыполненные ДЗ — для красного счётчика на вкладке. */
-export function pendingHomework(data: AppData): number {
-  return data.homework.filter((h) => !h.done).length;
-}

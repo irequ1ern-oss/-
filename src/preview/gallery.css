@@ -217,6 +217,7 @@
 .gal-link {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   min-height: var(--tap-min);
   padding: 0 var(--space-3);
   color: var(--accent);

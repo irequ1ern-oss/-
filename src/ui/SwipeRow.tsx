@@ -11,7 +11,7 @@ import { Button } from './controls';
 import { haptic } from './haptics';
 import { Icon } from './Icon';
 import type { IconName } from './iconData';
-import { closeSheet, openSheet } from './overlays';
+import { dismissSheet, openSheet } from './overlays';
 import './SwipeRow.css';
 
 export interface SwipeAction {
@@ -143,26 +143,26 @@ function askConfirm(confirm: NonNullable<SwipeAction['confirm']>, context?: stri
     };
     const id = openSheet({
       title: confirm.title,
-      content: () => <ConfirmSheet context={context} confirmLabel={confirm.confirmLabel} onAnswer={answer} sheetId={id} />,
+      // Шторку закрыли фоном, «×», Esc или свайпом вниз — это «Отмена».
+      onClose: () => answer(false),
+      content: () => (
+        <ConfirmSheet
+          context={context}
+          confirmLabel={confirm.confirmLabel}
+          onAnswer={(ok) => {
+            answer(ok);
+            dismissSheet(id);
+          }}
+        />
+      ),
     });
   });
 }
 
-function ConfirmSheet(props: { context?: string; confirmLabel: string; onAnswer: (ok: boolean) => void; sheetId: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  // Шторку закрыли фоном, «×», Esc или свайпом вниз — это «Отмена».
-  useEffect(() => () => props.onAnswer(false), []);
-
-  const reply = (ok: boolean) => {
-    props.onAnswer(ok);
-    // Закрываем собственной кнопкой шторки — тогда она уезжает с анимацией.
-    const close = ref.current?.closest('.sheet')?.querySelector<HTMLButtonElement>('.sheet__close');
-    if (close) close.click();
-    else closeSheet(props.sheetId);
-  };
-
+function ConfirmSheet(props: { context?: string; confirmLabel: string; onAnswer: (ok: boolean) => void }) {
+  const reply = props.onAnswer;
   return (
-    <div ref={ref} class="swipe-confirm">
+    <div class="swipe-confirm">
       {props.context && <p class="swipe-confirm__context t-subhead t-secondary">{props.context}</p>}
       <Button block size="lg" class="swipe-confirm__destructive" onClick={() => reply(true)}>
         {props.confirmLabel}

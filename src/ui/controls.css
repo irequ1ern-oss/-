@@ -30,7 +30,7 @@
 
 .segmented__item {
   min-height: 36px;
-  padding: 4px 6px;
+  padding: 4px 2px;
   border-radius: 8px;
   text-align: center;
   font-size: var(--fs-subhead);

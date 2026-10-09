@@ -70,6 +70,8 @@
 
 .navbar__side--end {
   justify-content: flex-end;
+  /* Кнопки справа не сжимаются и не наезжают на маленький заголовок — сокращается он */
+  min-width: max-content;
 }
 
 .navbar__back {
@@ -83,6 +85,15 @@
   font-size: var(--fs-body);
   white-space: nowrap;
   max-width: 40vw;
+  overflow: hidden;
+}
+
+.navbar__back > .icon {
+  flex: none;
+}
+
+.navbar__back > span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }

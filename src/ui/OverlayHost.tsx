@@ -40,6 +40,11 @@ function Sheet({ spec, depth }: { spec: SheetSpec; depth: number }) {
     window.setTimeout(() => closeSheet(spec.id), reducedMotion() ? 0 : DURATION);
   };
 
+  // Закрытие из кода (dismissSheet) — та же анимация, что у «×».
+  useEffect(() => {
+    if (spec.leaving) close();
+  }, [spec.leaving]);
+
   useEffect(() => {
     lastFocus.current = document.activeElement;
     const raf = requestAnimationFrame(() => setPhase('open'));

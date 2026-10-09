@@ -15,8 +15,9 @@ import { SubjectCard } from '../views/SubjectCard';
 import { PlusSheet } from '../views/PlusSheet';
 import { UpcomingAside } from '../views/UpcomingAside';
 import {
-  ActionsContext, AppDataContext, LayoutContext, pendingHomework, type AppActions, type AppData, type Layout,
+  ActionsContext, AppDataContext, LayoutContext, type AppActions, type AppData, type Layout,
 } from './app';
+import { usePendingHomework } from '../views/homework/store';
 import { ClockContext, type ClockSource } from './clock';
 import { goBack, useRoute, type Route } from './nav';
 import { Stack, type BackInfo } from './Stack';
@@ -95,7 +96,7 @@ export function AppShell({ data, clock, forceLayout }: Props) {
     [layout, openPlus],
   );
 
-  const homeworkCount = pendingHomework(data);
+  const homeworkCount = usePendingHomework(data.homework);
   const classes = ['shell', `shell--${layout}`];
   if (layout !== 'phone' && settings.sidebarCollapsed) classes.push('is-collapsed');
 
