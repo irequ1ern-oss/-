@@ -1,0 +1,40 @@
+.subject-card__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-2) 0 var(--space-6);
+  text-align: center;
+}
+
+.subject-card__head .subject-icon {
+  margin-bottom: 6px;
+}
+
+.subject-card__full {
+  max-width: 440px;
+}
+
+.subject-card__color {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--label-2);
+}
+
+.subject-card__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.subject-card__teacher .cell__accessory {
+  flex: 1;
+  min-width: 0;
+  max-width: 62%;
+}

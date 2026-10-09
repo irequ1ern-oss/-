@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { computeTodayView } from './today';
 import { override, period, sources } from './testData';
-import { toMinutes } from './time';
+import { clockAt } from './time';
 
-const at = (date: string, time: string) => ({ date, minutes: toMinutes(time) });
+const at = clockAt;
 
 describe('computeTodayView', () => {
   it('во время пары: текущая, сколько до конца, следующая', () => {

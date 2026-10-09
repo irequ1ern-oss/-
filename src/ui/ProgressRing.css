@@ -1,0 +1,40 @@
+.ring {
+  position: relative;
+  flex: none;
+  width: var(--size);
+  height: var(--size);
+}
+
+.ring svg {
+  display: block;
+  transform: rotate(-90deg);
+}
+
+.ring circle {
+  fill: none;
+}
+
+.ring__track {
+  stroke: var(--ring-track);
+}
+
+.ring__value {
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring__value {
+    transition: none;
+  }
+}
+
+.ring__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}

@@ -14,6 +14,8 @@ export interface Clock {
   date: DateStr;
   /** Минуты от полуночи по Москве. */
   minutes: number;
+  /** Секунды от полуночи по Москве (для таймеров с секундами). */
+  seconds: number;
 }
 
 const moscowFormat = new Intl.DateTimeFormat('en-CA', {
@@ -23,16 +25,42 @@ const moscowFormat = new Intl.DateTimeFormat('en-CA', {
   day: '2-digit',
   hour: '2-digit',
   minute: '2-digit',
+  second: '2-digit',
   hourCycle: 'h23',
 });
 
 export function moscowClock(instant: Date = new Date()): Clock {
   const parts: Record<string, string> = {};
   for (const p of moscowFormat.formatToParts(instant)) parts[p.type] = p.value;
+  const minutes = Number(parts.hour) * 60 + Number(parts.minute);
   return {
     date: `${parts.year}-${parts.month}-${parts.day}`,
-    minutes: Number(parts.hour) * 60 + Number(parts.minute),
+    minutes,
+    seconds: minutes * 60 + Number(parts.second),
   };
+}
+
+/** Сдвиг часов на заданное число секунд (с переходом через полночь). */
+export function shiftClock(clock: Clock, deltaSeconds: number): Clock {
+  let seconds = clock.seconds + Math.floor(deltaSeconds);
+  let date = clock.date;
+  while (seconds >= 86_400) {
+    seconds -= 86_400;
+    date = addDays(date, 1);
+  }
+  while (seconds < 0) {
+    seconds += 86_400;
+    date = addDays(date, -1);
+  }
+  return { date, minutes: Math.floor(seconds / 60), seconds };
+}
+
+/** Часы со временем «как на стене»: удобно для тестов и тестового времени ?now=. */
+export function clockAt(date: DateStr, time: string): Clock {
+  const m = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(time);
+  if (!m) throw new Error(`Неверное время: ${time}`);
+  const minutes = Number(m[1]) * 60 + Number(m[2]);
+  return { date, minutes, seconds: minutes * 60 + Number(m[3] ?? 0) };
 }
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -97,9 +125,9 @@ export function toMinutes(time: TimeStr): number {
  */
 export function parseClockOverride(value: string | null): Clock | null {
   if (!value) return null;
-  const m = /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}))?$/.exec(value.trim());
+  const m = /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2})(?::([0-5]\d))?)?$/.exec(value.trim());
   if (!m || !isValidDate(m[1])) return null;
   const time = m[2] ?? '08:00';
   if (!isValidTime(time)) return null;
-  return { date: m[1], minutes: toMinutes(time) };
+  return clockAt(m[1], m[3] ? `${time}:${m[3]}` : time);
 }

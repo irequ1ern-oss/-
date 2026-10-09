@@ -1,0 +1,48 @@
+.lesson-row__title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lesson-row__short {
+  font-weight: 600;
+}
+
+.lesson-row--cancelled .lesson-row__short,
+.lesson-row--cancelled .cell__subtitle {
+  text-decoration: line-through;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--label-2);
+}
+
+.chip--cancelled {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+
+.chip--changed,
+.chip--added {
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  color: var(--warning);
+}
+
+.lesson-row-preview {
+  height: 100%;
+  background: var(--surface);
+}
+
+.lesson-row-preview .cell,
+.lesson-row-preview .cell__row {
+  height: 100%;
+}

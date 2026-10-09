@@ -9,14 +9,21 @@ export interface Subject {
   short: string;
   /** Полное название: «Метрология, стандартизация и сертификация». */
   full: string;
+  /** Иконка по умолчанию (имя из src/ui/iconData.ts), например «ruler». */
+  icon?: string;
+  /** Цвет по умолчанию из палитры предметов; если не указан — подбирается автоматически. */
+  color?: string;
 }
 
 export interface Lesson {
   start: TimeStr;
   end: TimeStr;
   subjectId: string;
+  /** Кабинет, общий для всех. */
   room?: string;
-  /** Пояснение, например «2-я подгруппа — каб. 25». */
+  /** Кабинеты по подгруппам: rooms[0] — 1-я подгруппа, rooms[1] — 2-я. Важнее, чем room. */
+  rooms?: string[];
+  /** Пояснение к паре. */
   note?: string;
 }
 
@@ -25,6 +32,8 @@ export type Week = Partial<Record<WeekdayKey, Lesson[]>>;
 /** Содержимое data/schedule.json. */
 export interface MainSchedule {
   version: number;
+  /** Сколько подгрупп в группе (для настройки «Подгруппа»). */
+  subgroups?: number;
   subjects: Subject[];
   week: Week;
 }
@@ -115,8 +124,20 @@ export function activePeriod(date: DateStr, periods: SchedulePeriod[]): Schedule
 }
 
 function bareLesson(l: ResolvedLesson | Lesson): Lesson {
-  const { start, end, subjectId, room, note } = l;
-  return { start, end, subjectId, ...(room !== undefined && { room }), ...(note !== undefined && { note }) };
+  const { start, end, subjectId, room, rooms, note } = l;
+  return {
+    start,
+    end,
+    subjectId,
+    ...(room !== undefined && { room }),
+    ...(rooms !== undefined && { rooms: [...rooms] }),
+    ...(note !== undefined && { note }),
+  };
+}
+
+/** Кабинет пары для подгруппы (1 или 2). Кабинет по подгруппам важнее общего. */
+export function lessonRoom(lesson: Lesson, subgroup: number): string | undefined {
+  return lesson.rooms?.[subgroup - 1] ?? lesson.room ?? lesson.rooms?.[0];
 }
 
 function sortLessons(lessons: ResolvedLesson[]): ResolvedLesson[] {
@@ -157,8 +178,10 @@ export function resolveDay(date: DateStr, src: ScheduleSources): ResolvedDay {
     if (o.action === 'cancel') {
       lessons[idx] = { ...current, status: 'cancelled', changeNote: o.note ?? current.changeNote };
     } else {
+      // Замена кабинета одним полем room отменяет кабинеты по подгруппам.
+      const base = o.lesson.room !== undefined && o.lesson.rooms === undefined ? { ...current, rooms: undefined } : current;
       lessons[idx] = {
-        ...current,
+        ...base,
         ...o.lesson,
         status: current.status === 'added' ? 'added' : 'changed',
         original: current.original ?? bareLesson(current),

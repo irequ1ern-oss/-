@@ -1,0 +1,169 @@
+.group {
+  margin: 0 0 var(--space-6);
+}
+
+.group__header {
+  color: var(--label-2);
+  padding: 0 var(--space-4) 6px;
+  font-weight: 500;
+}
+
+.group__footer {
+  color: var(--label-2);
+  padding: 6px var(--space-4) 0;
+}
+
+.group__body {
+  background: var(--surface);
+  border-radius: var(--r-group);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.cell {
+  position: relative;
+  transition: background-color var(--dur-1) var(--ease-ios);
+}
+
+.cell__row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--tap-min);
+  padding-left: var(--space-4);
+  color: inherit;
+  text-align: left;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.cell--interactive .cell__row:active {
+  background: var(--surface-2);
+}
+
+.cell__icon {
+  flex: none;
+  display: flex;
+  margin-right: var(--space-3);
+}
+
+.cell__content {
+  flex: 1;
+  min-width: 0;
+  min-height: inherit;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px var(--space-4) 10px 0;
+  border-top: 0.5px solid var(--separator);
+}
+
+/* Разделитель есть только между строками и начинается после иконки */
+.cell:first-child > .cell__row > .cell__content {
+  border-top: 0;
+}
+
+.cell__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cell__title {
+  overflow-wrap: anywhere;
+}
+
+.cell__subtitle {
+  color: var(--label-2);
+}
+
+.cell__value {
+  flex: none;
+  color: var(--label-2);
+  text-align: right;
+  max-width: 55%;
+}
+
+.cell__chevron {
+  flex: none;
+  color: var(--label-3);
+}
+
+.cell__accessory {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+
+.cell__below {
+  padding: 0 var(--space-4) 12px;
+}
+
+.cell--disabled .cell__row {
+  cursor: default;
+}
+
+.cell--disabled .cell__title,
+.cell--disabled .cell__icon {
+  opacity: 0.45;
+}
+
+.cell--dimmed .cell__row {
+  opacity: 0.5;
+}
+
+.cell--highlight {
+  background: color-mix(in srgb, var(--hl, var(--accent)) var(--subject-tint-mix), var(--surface));
+}
+
+.cell--highlight + .cell > .cell__row > .cell__content,
+.cell--highlight > .cell__row > .cell__content {
+  border-top-color: transparent;
+}
+
+.icon-tile {
+  display: inline-grid;
+  place-items: center;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  border-radius: var(--r-icon);
+  background: var(--c);
+  color: var(--on-subject);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: var(--space-8) var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+}
+
+.empty-state__icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--label-2);
+}
+
+.soon-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--label-2);
+  font-weight: 500;
+}

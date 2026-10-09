@@ -1,0 +1,12 @@
+.subject-icon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: var(--s);
+  height: var(--s);
+  border-radius: var(--r-icon);
+  background: var(--c);
+  color: var(--on-subject);
+  /* Лёгкий объём, как у иконок iOS */
+  box-shadow: var(--icon-edge);
+}

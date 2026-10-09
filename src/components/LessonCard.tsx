@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
-import type { ResolvedLesson } from '../core/schedule';
+import { lessonRoom, type ResolvedLesson } from '../core/schedule';
+import { formatRoom } from '../core/format';
 import type { LessonPhase } from '../core/today';
 import { formatDuration } from '../core/format';
 import { getSubject } from '../data/schedule';
@@ -42,7 +43,7 @@ export function LessonCard({ lesson, phase, current, minutesUntil }: Props) {
             {status && <span class={`chip chip--${lesson.status}`}>{status}</span>}
           </span>
           <span class="lesson__meta">
-            {lesson.room ? `каб. ${lesson.room}` : 'кабинет не указан'}
+            {formatRoom(lessonRoom(lesson, 1)) || 'кабинет не указан'}
             {current && <strong class="lesson__countdown"> · до конца {formatDuration(current.minutesLeft)}</strong>}
             {minutesUntil !== undefined && (
               <strong class="lesson__countdown"> · через {formatDuration(minutesUntil)}</strong>
@@ -62,7 +63,7 @@ export function LessonCard({ lesson, phase, current, minutesUntil }: Props) {
           {original && lesson.original && (
             <div>
               Было: {original.short}
-              {lesson.original.room ? `, каб. ${lesson.original.room}` : ''}, {lesson.original.start}–{lesson.original.end}
+              {lessonRoom(lesson.original, 1) ? `, ${formatRoom(lessonRoom(lesson.original, 1))}` : ''}, {lesson.original.start}–{lesson.original.end}
             </div>
           )}
           {lesson.changeNote && <div>Комментарий: {lesson.changeNote}</div>}

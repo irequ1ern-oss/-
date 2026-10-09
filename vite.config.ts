@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import preact from '@preact/preset-vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -9,8 +10,20 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 // Путь подставляет GitHub Actions через BASE_PATH; локально сайт открывается из корня.
 const base = process.env.BASE_PATH || '/';
 
+const page = (path: string) => fileURLToPath(new URL(path, import.meta.url));
+
 export default defineConfig({
   base,
+  build: {
+    rolldownOptions: {
+      // Приложение + страницы превью дизайна (preview/ — не кешируются для офлайна).
+      input: {
+        main: page('./index.html'),
+        preview: page('./preview/index.html'),
+        previewApp: page('./preview/app.html'),
+      },
+    },
+  },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
@@ -18,7 +31,7 @@ export default defineConfig({
   plugins: [
     preact(),
     VitePWA({
-      // Новая версия не подменяет старую сама: приложение покажет кнопку «Обновить».
+      // Новая версия ставится сама и включается при следующем открытии приложения.
       registerType: 'prompt',
       includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
@@ -40,8 +53,13 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
+        // Превью дизайна всегда грузится из сети и не попадает в офлайн-кеш приложения.
+        globIgnores: ['preview/**'],
+        navigateFallbackDenylist: [/\/preview\//],
         cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],

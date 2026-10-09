@@ -4,6 +4,8 @@ import { addDays, diffDays, weekdayIndex, type DateStr } from './time';
 
 const WEEKDAYS = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'];
 const WEEKDAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+/** «на понедельник», «на среду» — винительный падеж. */
+const WEEKDAYS_ACC = ['понедельник', 'вторник', 'среду', 'четверг', 'пятницу', 'субботу', 'воскресенье'];
 const MONTHS_GEN = [
   'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
   'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
@@ -19,6 +21,15 @@ export function capitalize(s: string): string {
 
 export function weekdayName(date: DateStr): string {
   return WEEKDAYS[weekdayIndex(date)];
+}
+
+/** «на завтра», «на среду» — для заголовков вида «Расписание на …». */
+export function forDayLabel(date: DateStr, today: DateStr): string {
+  const d = diffDays(today, date);
+  if (d === 0) return 'на сегодня';
+  if (d === 1) return 'на завтра';
+  if (d === 2) return 'на послезавтра';
+  return `на ${WEEKDAYS_ACC[weekdayIndex(date)]}${d > 6 ? `, ${formatDayMonth(date)}` : ''}`;
 }
 
 export function weekdayShort(date: DateStr): string {
@@ -75,4 +86,37 @@ export function plural(n: number, one: string, few: string, many: string): strin
   if (n10 === 1 && n100 !== 11) return one;
   if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return few;
   return many;
+}
+
+/**
+ * Подпись кабинета: «каб. 27», «каб. С». Слова (например «Спортзал») показываются как есть.
+ * Пустая строка, если кабинет не указан.
+ */
+export function formatRoom(room: string | undefined): string {
+  if (!room) return '';
+  return /^\p{L}{4,}/u.test(room) ? room : `каб. ${room}`;
+}
+
+/** Таймер с секундами: «27:12», «1:05:09». */
+export function formatTimer(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const mm = String(m).padStart(h ? 2 : 1, '0');
+  const ss = String(sec).padStart(2, '0');
+  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+/** Приветствие по времени суток (часы по Москве). */
+export function greeting(minutesOfDay: number, name?: string): string {
+  const h = Math.floor(minutesOfDay / 60) % 24;
+  const base = h >= 5 && h < 12 ? 'Доброе утро' : h >= 12 && h < 17 ? 'Добрый день' : h >= 17 && h < 23 ? 'Добрый вечер' : 'Доброй ночи';
+  const n = name?.trim();
+  return n ? `${base}, ${n}` : base;
+}
+
+/** «4 пары», «1 пара», «5 пар». */
+export function lessonsCount(n: number): string {
+  return `${n} ${plural(n, 'пара', 'пары', 'пар')}`;
 }

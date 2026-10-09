@@ -1,54 +1,55 @@
 {
   "version": 1,
+  "subgroups": 2,
   "subjects": [
-    { "id": "mss", "short": "МСС", "full": "Метрология, стандартизация и сертификация" },
-    { "id": "pfo", "short": "ПФО", "full": "Процессы формообразования и инструменты" },
-    { "id": "obp", "short": "ОБП", "full": "Основы бережливого производства" },
-    { "id": "ig", "short": "ИГ", "full": "Инженерная графика" },
-    { "id": "bzh", "short": "БЖ", "full": "Безопасность жизнедеятельности" },
-    { "id": "mdk0401", "short": "МДК 04.01", "full": "Оборудование и оснастка машиностроительного производства" },
-    { "id": "mdk0402", "short": "МДК 04.02", "full": "Контроль, наладка и техническое обслуживание оборудования машиностроительного производства" },
-    { "id": "mdk0601", "short": "МДК 06.01", "full": "Технология металлообработки на металлорежущих станках с программным управлением" },
-    { "id": "matved", "short": "Матвед", "full": "Материаловедение" },
-    { "id": "history", "short": "История", "full": "История России" },
-    { "id": "pe", "short": "Физра", "full": "Физическая культура" },
-    { "id": "lang", "short": "Ин. яз", "full": "Иностранный язык" },
-    { "id": "fakult", "short": "Факульт.", "full": "Факультатив (общий по специальности)" }
+    {"id": "mss", "short": "МСС", "full": "Метрология, стандартизация и сертификация", "icon": "ruler"},
+    {"id": "pfo", "short": "ПФО", "full": "Процессы формообразования и инструменты", "icon": "toolbox"},
+    {"id": "obp", "short": "ОБП", "full": "Основы бережливого производства", "icon": "chart-line-up"},
+    {"id": "ig", "short": "ИГ", "full": "Инженерная графика", "icon": "compass-tool"},
+    {"id": "bzh", "short": "БЖ", "full": "Безопасность жизнедеятельности", "icon": "shield-check"},
+    {"id": "mdk0401", "short": "МДК 04.01", "full": "Оборудование и оснастка машиностроительного производства", "icon": "gear"},
+    {"id": "mdk0402", "short": "МДК 04.02", "full": "Контроль, наладка и техническое обслуживание оборудования машиностроительного производства", "icon": "wrench"},
+    {"id": "mdk0601", "short": "МДК 06.01", "full": "Технология металлообработки на металлорежущих станках с программным управлением", "icon": "cpu"},
+    {"id": "matved", "short": "Матвед", "full": "Материаловедение", "icon": "atom"},
+    {"id": "history", "short": "История", "full": "История России", "icon": "bank"},
+    {"id": "pe", "short": "Физра", "full": "Физическая культура", "icon": "barbell"},
+    {"id": "lang", "short": "Ин. яз", "full": "Иностранный язык", "icon": "translate"},
+    {"id": "fakult", "short": "Факульт.", "full": "Факультатив (общий по специальности)", "icon": "book-open"}
   ],
   "week": {
     "mon": [
-      { "start": "09:00", "end": "10:40", "subjectId": "mss", "room": "27" },
-      { "start": "10:50", "end": "12:40", "subjectId": "pfo", "room": "27" },
-      { "start": "13:00", "end": "14:40", "subjectId": "matved", "room": "28" },
-      { "start": "14:50", "end": "15:35", "subjectId": "mdk0402", "room": "28" },
-      { "start": "15:45", "end": "16:30", "subjectId": "mdk0401", "room": "8" }
+      {"start": "09:00", "end": "10:40", "subjectId": "mss", "room": "27"},
+      {"start": "10:50", "end": "12:40", "subjectId": "pfo", "room": "27"},
+      {"start": "13:00", "end": "14:40", "subjectId": "matved", "room": "28"},
+      {"start": "14:50", "end": "15:35", "subjectId": "mdk0402", "room": "28"},
+      {"start": "15:45", "end": "16:30", "subjectId": "mdk0401", "room": "8"}
     ],
     "tue": [
-      { "start": "09:00", "end": "10:40", "subjectId": "mss", "room": "27" },
-      { "start": "10:50", "end": "12:40", "subjectId": "matved", "room": "28" },
-      { "start": "13:00", "end": "14:40", "subjectId": "pfo", "room": "27" },
-      { "start": "14:50", "end": "16:30", "subjectId": "fakult" }
+      {"start": "09:00", "end": "10:40", "subjectId": "mss", "room": "27"},
+      {"start": "10:50", "end": "12:40", "subjectId": "matved", "room": "28"},
+      {"start": "13:00", "end": "14:40", "subjectId": "pfo", "room": "27"},
+      {"start": "14:50", "end": "16:30", "subjectId": "fakult"}
     ],
     "wed": [
-      { "start": "09:00", "end": "09:45", "subjectId": "mdk0401", "room": "8" },
-      { "start": "09:55", "end": "10:40", "subjectId": "history", "room": "6" },
-      { "start": "10:50", "end": "12:40", "subjectId": "bzh" },
-      { "start": "13:00", "end": "14:40", "subjectId": "obp", "room": "15" },
-      { "start": "14:50", "end": "16:30", "subjectId": "fakult" }
+      {"start": "09:00", "end": "09:45", "subjectId": "mdk0401", "room": "8"},
+      {"start": "09:55", "end": "10:40", "subjectId": "history", "room": "6"},
+      {"start": "10:50", "end": "12:40", "subjectId": "bzh"},
+      {"start": "13:00", "end": "14:40", "subjectId": "obp", "room": "15"},
+      {"start": "14:50", "end": "16:30", "subjectId": "fakult"}
     ],
     "thu": [
-      { "start": "09:00", "end": "10:40", "subjectId": "ig", "room": "27", "note": "2-я подгруппа — каб. 25" },
-      { "start": "10:50", "end": "11:35", "subjectId": "ig", "room": "27", "note": "2-я подгруппа — каб. 25" },
-      { "start": "11:55", "end": "12:40", "subjectId": "history", "room": "6" },
-      { "start": "13:00", "end": "14:40", "subjectId": "ig", "room": "27", "note": "2-я подгруппа — каб. 25" },
-      { "start": "14:50", "end": "15:35", "subjectId": "pe", "room": "С", "note": "2-я подгруппа — каб. 3" }
+      {"start": "09:00", "end": "10:40", "subjectId": "ig", "rooms": ["27", "25"]},
+      {"start": "10:50", "end": "11:35", "subjectId": "ig", "rooms": ["27", "25"]},
+      {"start": "11:55", "end": "12:40", "subjectId": "history", "room": "6"},
+      {"start": "13:00", "end": "14:40", "subjectId": "ig", "rooms": ["27", "25"]},
+      {"start": "14:50", "end": "15:35", "subjectId": "pe", "rooms": ["Спортзал", "3"]}
     ],
     "fri": [
-      { "start": "09:00", "end": "12:40", "subjectId": "mdk0601", "room": "28" },
-      { "start": "13:00", "end": "13:45", "subjectId": "mdk0601", "room": "28" },
-      { "start": "13:55", "end": "14:40", "subjectId": "mdk0401", "room": "8" },
-      { "start": "14:50", "end": "15:35", "subjectId": "history", "room": "6" },
-      { "start": "15:45", "end": "16:30", "subjectId": "lang", "room": "21", "note": "2-я подгруппа — каб. 23" }
+      {"start": "09:00", "end": "12:40", "subjectId": "mdk0601", "room": "28"},
+      {"start": "13:00", "end": "13:45", "subjectId": "mdk0601", "room": "28"},
+      {"start": "13:55", "end": "14:40", "subjectId": "mdk0401", "room": "8"},
+      {"start": "14:50", "end": "15:35", "subjectId": "history", "room": "6"},
+      {"start": "15:45", "end": "16:30", "subjectId": "lang", "rooms": ["21", "23"]}
     ]
   }
 }

@@ -30,6 +30,9 @@ export function validateWeek(week: Week, subjectIds: Set<string>): string[] {
       }
       if (toMinutes(l.start) >= toMinutes(l.end)) errors.push(`${where}: начало ${l.start} не раньше конца ${l.end}.`);
       if (!subjectIds.has(l.subjectId)) errors.push(`${where}: неизвестный предмет «${l.subjectId}».`);
+      if (l.rooms !== undefined && (!Array.isArray(l.rooms) || l.rooms.some((r) => typeof r !== 'string' || !r))) {
+        errors.push(`${where}: rooms должен быть списком кабинетов по подгруппам, например ["27", "25"].`);
+      }
       if (prev && isValidTime(prev.end) && toMinutes(l.start) < toMinutes(prev.end)) {
         errors.push(`${where}: начинается в ${l.start}, раньше конца предыдущей пары (${prev.end}).`);
       }

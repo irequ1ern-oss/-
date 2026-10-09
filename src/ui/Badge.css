@@ -1,0 +1,14 @@
+.badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--danger-fill);
+  color: var(--on-accent);
+  font-size: var(--fs-caption);
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0;
+}

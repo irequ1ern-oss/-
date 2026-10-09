@@ -1,0 +1,347 @@
+/* ---------- Каркас ---------- */
+.shell {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.shell__main {
+  position: absolute;
+  inset: 0;
+}
+
+/* Телефон: место под капсулу вкладок */
+.shell--phone {
+  --screen-bottom: calc(var(--tabbar-h) + 48px + env(safe-area-inset-bottom));
+  --toast-bottom: calc(var(--tabbar-h) + 28px);
+}
+
+/* Планшет: боковое меню слева, на широком экране — колонка «Ближайшее» справа */
+.shell--tablet,
+.shell--wide {
+  --screen-bottom: var(--space-8);
+  --toast-bottom: var(--space-6);
+  --side: calc(var(--sidebar-w) + 20px);
+}
+
+.shell--tablet.is-collapsed,
+.shell--wide.is-collapsed {
+  --side: calc(var(--sidebar-w-collapsed) + 20px);
+}
+
+.shell--tablet .shell__main,
+.shell--wide .shell__main {
+  left: var(--side);
+  transition: left var(--dur-3) var(--ease-ios);
+}
+
+.shell--wide .shell__main {
+  right: calc(var(--aside-w) + 12px);
+}
+
+/* ---------- Стек экранов ---------- */
+.stack {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.stack__layer {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+}
+
+.stack__layer.is-below {
+  visibility: hidden;
+  transform: translateX(-28%);
+}
+
+.stack__layer.anim-push-in {
+  z-index: 2;
+  animation: stack-push-in var(--dur-3) var(--ease-ios) both;
+  box-shadow: var(--shadow-float);
+}
+
+.stack__layer.anim-push-cover {
+  visibility: visible;
+  animation: stack-push-cover var(--dur-3) var(--ease-ios) both;
+}
+
+.stack__layer.anim-pop-out {
+  z-index: 3;
+  animation: stack-pop-out var(--dur-3) var(--ease-ios) both;
+  box-shadow: var(--shadow-float);
+}
+
+.stack__layer.anim-pop-reveal {
+  animation: stack-pop-reveal var(--dur-3) var(--ease-ios) both;
+}
+
+.stack__edge {
+  position: absolute;
+  z-index: 4;
+  top: calc(var(--navbar-h) + env(safe-area-inset-top));
+  bottom: 0;
+  left: 0;
+  width: 16px;
+  touch-action: none;
+}
+
+@keyframes stack-push-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes stack-push-cover {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateX(-28%);
+  }
+}
+
+@keyframes stack-pop-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes stack-pop-reveal {
+  from {
+    transform: translateX(-28%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* ---------- Нижнее меню телефона ---------- */
+.tabbar {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 var(--gutter);
+  pointer-events: none;
+}
+
+.tabbar > * {
+  pointer-events: auto;
+}
+
+.tabbar__capsule {
+  position: relative;
+  flex: 1;
+  max-width: 340px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  height: var(--tabbar-h);
+  padding: 4px;
+  border-radius: var(--r-pill);
+  isolation: isolate;
+}
+
+/* «Пузырь» под активной вкладкой, плавно переезжает */
+.tabbar__indicator {
+  position: absolute;
+  z-index: -1;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 4);
+  border-radius: var(--r-pill);
+  background: var(--accent-tint);
+  transform: translateX(calc(100% * var(--i)));
+  transition: transform var(--dur-3) var(--ease-ios);
+}
+
+.tabbar__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: var(--tap-min);
+  border-radius: var(--r-pill);
+  color: var(--label);
+  transition: color var(--dur-1) var(--ease-ios), transform var(--dur-1) var(--ease-ios);
+}
+
+.tabbar__item:active {
+  transform: scale(0.94);
+}
+
+.tabbar__item.is-active {
+  color: var(--accent);
+}
+
+.tabbar__icon {
+  position: relative;
+  display: flex;
+}
+
+.tabbar__badge {
+  position: absolute;
+  top: -4px;
+  left: 16px;
+}
+
+.tabbar__label {
+  font-size: 11px;
+  line-height: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.tabbar__plus {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--plus-size);
+  height: var(--plus-size);
+  border-radius: 50%;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--shadow-float);
+}
+
+/* ---------- Боковое меню (планшет) ---------- */
+.sidebar {
+  position: absolute;
+  z-index: 10;
+  top: calc(10px + env(safe-area-inset-top));
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: 10px;
+  width: var(--sidebar-w);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--r-card);
+  transition: width var(--dur-3) var(--ease-ios);
+  overflow: hidden;
+}
+
+.is-collapsed .sidebar {
+  width: var(--sidebar-w-collapsed);
+}
+
+.sidebar__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  margin-bottom: var(--space-3);
+}
+
+.sidebar__title {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.is-collapsed .sidebar__head {
+  flex-direction: column;
+}
+
+.sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.sidebar__item--bottom {
+  margin-top: auto;
+}
+
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border-radius: var(--r-sm);
+  color: var(--label);
+  font-weight: 500;
+  transition: background-color var(--dur-1) var(--ease-ios);
+}
+
+.sidebar__item:active {
+  background: var(--surface-2);
+}
+
+.sidebar__item.is-active {
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.is-collapsed .sidebar__item {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar__icon {
+  position: relative;
+  display: flex;
+}
+
+.sidebar__dot {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+}
+
+.sidebar__label {
+  flex: 1;
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* ---------- Колонка «Ближайшее» ---------- */
+.shell__aside {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top));
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  right: 10px;
+  width: var(--aside-w);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--r-card);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.aside-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-4);
+}
+
+.aside-panel__close {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 1;
+}
+
+.shell__aside .group__body,
+.shell__aside .empty-state {
+  box-shadow: none;
+}

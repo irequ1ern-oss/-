@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'preact/hooks';
-import { dayHasChanges, type ResolvedDay, type ResolvedLesson, type ScheduleSources } from '../core/schedule';
+import { dayHasChanges, lessonRoom, type ResolvedDay, type ResolvedLesson, type ScheduleSources } from '../core/schedule';
 import { weekDays } from '../core/week';
 import { formatDDMM, formatWeekRange, weekdayShort } from '../core/format';
 import { addDays, diffDays, startOfWeek, type Clock } from '../core/time';
@@ -109,7 +109,7 @@ function WeekLesson({ lesson }: { lesson: ResolvedLesson }) {
           {lesson.start}–{lesson.end}
         </span>
         <span class="row__subject">{subject.short}</span>
-        <span class="row__room">{lesson.room ?? ''}</span>
+        <span class="row__room">{lessonRoom(lesson, 1) ?? ''}</span>
       </button>
       {open && (
         <div class="row__details">

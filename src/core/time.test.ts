@@ -5,11 +5,11 @@ import {
 
 describe('moscowClock', () => {
   it('переводит момент времени в московские дату и минуты', () => {
-    expect(moscowClock(new Date('2026-10-09T07:30:00Z'))).toEqual({ date: '2026-10-09', minutes: 10 * 60 + 30 });
+    expect(moscowClock(new Date('2026-10-09T07:30:15Z'))).toEqual({ date: '2026-10-09', minutes: 630, seconds: 630 * 60 + 15 });
   });
 
   it('после 21:00 UTC в Москве уже следующий день', () => {
-    expect(moscowClock(new Date('2026-10-09T21:15:00Z'))).toEqual({ date: '2026-10-10', minutes: 15 });
+    expect(moscowClock(new Date('2026-10-09T21:15:00Z'))).toEqual({ date: '2026-10-10', minutes: 15, seconds: 900 });
   });
 });
 
@@ -44,9 +44,18 @@ describe('даты', () => {
 
 describe('parseClockOverride', () => {
   it('разбирает ?now=', () => {
-    expect(parseClockOverride('2026-10-12T09:30')).toEqual({ date: '2026-10-12', minutes: 570 });
-    expect(parseClockOverride('2026-10-12')).toEqual({ date: '2026-10-12', minutes: 480 });
+    expect(parseClockOverride('2026-10-12T09:30')).toEqual({ date: '2026-10-12', minutes: 570, seconds: 34200 });
+    expect(parseClockOverride('2026-10-12T09:30:45')).toEqual({ date: '2026-10-12', minutes: 570, seconds: 34245 });
+    expect(parseClockOverride('2026-10-12')).toEqual({ date: '2026-10-12', minutes: 480, seconds: 28800 });
     expect(parseClockOverride('вчера')).toBeNull();
     expect(parseClockOverride(null)).toBeNull();
+  });
+});
+
+describe('shiftClock', () => {
+  it('сдвигает время и переходит через полночь', async () => {
+    const { shiftClock, clockAt } = await import('./time');
+    expect(shiftClock(clockAt('2026-10-12', '10:00:00'), 75)).toEqual(clockAt('2026-10-12', '10:01:15'));
+    expect(shiftClock(clockAt('2026-10-12', '23:59:30'), 45)).toEqual(clockAt('2026-10-13', '00:00:15'));
   });
 });

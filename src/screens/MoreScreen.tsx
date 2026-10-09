@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { WEEKDAY_KEYS } from '../core/time';
+import { lessonRoom } from '../core/schedule';
+import { formatRoom } from '../core/format';
 import { getSubject, mainSchedule } from '../data/schedule';
 import { isStoragePersisted, usePwaState } from '../pwa';
 import { clockOverride } from '../hooks';
@@ -44,7 +46,7 @@ export function MoreScreen() {
                         {s.short !== s.full && <div class="muted small">{s.full}</div>}
                         {l.note && <div class="muted small">{l.note}</div>}
                       </td>
-                      <td class="nowrap">{l.room ? `каб. ${l.room}` : '—'}</td>
+                      <td class="nowrap">{formatRoom(lessonRoom(l, 1)) || '—'}</td>
                     </tr>
                   );
                 })}
