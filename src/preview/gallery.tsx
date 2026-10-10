@@ -249,7 +249,9 @@ function PhoneSection({ theme, route, maxHeight }: { theme: ThemeChoice; route: 
 
 function TabletSection({ theme, maxHeight }: { theme: ThemeChoice; maxHeight: number }) {
   const [state, setState] = useState<PresetName>('lesson');
-  const [portrait, setPortrait] = useState(false);
+  // На планшете рамка сначала повёрнута так же, как он сам (горизонтальная на вертикальном вышла бы мелкой).
+  // На телефоне — горизонтально: это основная раскладка планшета, с колонкой «Ближайшее».
+  const [portrait, setPortrait] = useState(() => matchMedia('(orientation: portrait) and (min-width: 768px)').matches);
   const frame = useRef<HTMLIFrameElement>(null);
   const src = useFrameSrc(frame, state, theme);
   const narrow = useMediaQuery('(max-width: 767px)');
@@ -320,7 +322,7 @@ function HeroSection() {
       <SectionHead
         n={3}
         id="hero-title"
-        title="Главный блок «Сегодня»: 5 состояний"
+        title={'Главный блок «Сегодня»: 5\u00a0состояний'}
         text="Настоящий компонент на разных моментах недели. Нажми на предмет — откроется его карточка."
       />
       <div class="gal-heroes">
@@ -339,6 +341,8 @@ interface TryItem {
   color: string;
   title: string;
   text: string;
+  /** Подсказка для планшетной раскладки (≥ 768 px), если элемент там в другом месте. */
+  tabletText?: string;
   hash: string;
   state?: PresetName;
 }
@@ -346,10 +350,24 @@ interface TryItem {
 const TRY_ITEMS: TryItem[] = [
   { icon: 'hand-tap', color: 'blue', title: 'Нажать на пару → карточка предмета', text: '«Сегодня», список пар внизу', hash: '#/today' },
   { icon: 'list-bullets', color: 'indigo', title: 'Долгое нажатие на пару → меню', text: 'Удерживай строку пары полсекунды', hash: '#/today' },
-  { icon: 'pencil-simple', color: 'orange', title: 'Кнопка «+» → шторка', text: 'Круглая кнопка справа от вкладок', hash: '#/today' },
+  {
+    icon: 'pencil-simple',
+    color: 'orange',
+    title: 'Кнопка «+» → шторка',
+    text: 'Круглая кнопка справа от вкладок',
+    tabletText: 'Кнопка «+» вверху бокового меню',
+    hash: '#/today',
+  },
   { icon: 'calendar-dots', color: 'teal', title: 'Неделя: свайп влево/вправо по списку пар', text: 'Соседний день; в четверг — замена', hash: '#/week' },
   { icon: 'check-square', color: 'green', title: 'ДЗ: свайпы по строкам и статистика', text: 'Вправо — сделано, влево — перенести или удалить', hash: '#/homework' },
-  { icon: 'gear-six', color: 'gray', title: 'Настройки: тема, подгруппа, предметы', text: 'Шестерёнка справа вверху на «Сегодня»', hash: '#/settings' },
+  {
+    icon: 'gear-six',
+    color: 'gray',
+    title: 'Настройки: тема, подгруппа, предметы',
+    text: 'Шестерёнка справа вверху на «Сегодня»',
+    tabletText: 'Пункт «Настройки» внизу бокового меню',
+    hash: '#/settings',
+  },
   { icon: 'palette', color: 'purple', title: 'Цвет и иконка предмета', text: 'На примере МСС', hash: '#/settings/subjects/mss' },
 ];
 
@@ -373,7 +391,8 @@ function LinkRow({ href, icon, title, subtitle, onClick }: { href: string; icon:
 
 function TrySection({ theme }: { theme: ThemeChoice }) {
   const wide = useMediaQuery('(min-width: 1000px)');
-  const narrow = useMediaQuery('(max-width: 767px)');
+  // С 768 px приложение открывается в планшетной раскладке (как в AppShell) — подсказки про её кнопки.
+  const narrow = !useMediaQuery('(min-width: 768px)');
   // Боковое меню есть только на планшете: на телефоне ведём к рамке планшета в разделе 2.
   const tablet = (
     <LinkRow
@@ -399,14 +418,19 @@ function TrySection({ theme }: { theme: ThemeChoice }) {
         href={appUrl(APP_BASE, { state: it.state ?? 'lesson', theme, hash: it.hash })}
         icon={<IconTile name={it.icon} color={it.color} />}
         title={it.title}
-        subtitle={it.text}
+        subtitle={narrow ? it.text : (it.tabletText ?? it.text)}
       />
     )),
     tablet,
   ];
   return (
     <section id="try" class="gal-section" aria-labelledby="try-title">
-      <SectionHead n={4} id="try-title" title="Что попробовать" text="Открывается приложение на весь экран. Вернуться сюда — кнопкой «Назад» телефона." />
+      <SectionHead
+        n={4}
+        id="try-title"
+        title="Что попробовать"
+        text={`Открывается приложение на весь экран. Вернуться сюда — кнопкой «Назад» ${narrow ? 'телефона' : 'браузера'}.`}
+      />
       <div class="gal-cols">
         {splitColumns(rows, wide ? 2 : 1).map((col, i) => (
           <Group key={i}>{col}</Group>

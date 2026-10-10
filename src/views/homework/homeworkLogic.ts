@@ -1,6 +1,7 @@
 // Логика списка ДЗ без интерфейса: группы по сроку, подписи сроков, изменения списка, «Ближайшее».
 
 import { plural, weekdayShort } from '../../core/format';
+import { findNextLessonOfSubject, type ScheduleSources } from '../../core/schedule';
 import { addDays, diffDays, startOfWeek, type DateStr } from '../../core/time';
 import type { EventItem } from '../../shell/app';
 import type { TrackedHomework } from './stats';
@@ -89,9 +90,19 @@ export function setDone(items: TrackedHomework[], id: string, done: boolean, tod
   });
 }
 
-/** Перенести срок на `days` дней. */
-export function postpone(items: TrackedHomework[], id: string, days = 1): TrackedHomework[] {
-  return items.map((h) => (h.id === id ? { ...h, due: addDays(h.due, days) } : h));
+/**
+ * Новый срок для «Перенести»: ДЗ к паре, поэтому — следующая пара этого предмета после прежнего срока,
+ * а у просроченного — после сегодняшнего дня (иначе оно так и осталось бы просроченным).
+ * Если пар предмета впереди нет — следующий день.
+ */
+export function postponedDue(item: Pick<TrackedHomework, 'subjectId' | 'due'>, today: DateStr, src: ScheduleSources): DateStr {
+  const from = item.due > today ? item.due : today;
+  return findNextLessonOfSubject(item.subjectId, from, src)?.date ?? addDays(from, 1);
+}
+
+/** Поставить новый срок (см. postponedDue). */
+export function postpone(items: TrackedHomework[], id: string, due: DateStr): TrackedHomework[] {
+  return items.map((h) => (h.id === id ? { ...h, due } : h));
 }
 
 /** Удалить; возвращает и само ДЗ с местом в списке — чтобы можно было «Отменить». */

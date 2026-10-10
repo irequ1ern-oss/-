@@ -5,8 +5,13 @@
   width: var(--s);
   height: var(--s);
   border-radius: var(--r-icon);
-  background: var(--c);
+  background: var(--ct, var(--c));
   color: var(--on-subject);
   /* Лёгкий объём, как у иконок iOS */
   box-shadow: var(--icon-edge);
+}
+
+/* Едва заметная тень знака — белый читается и на светлых плитках */
+.subject-icon svg {
+  filter: var(--glyph-shadow);
 }

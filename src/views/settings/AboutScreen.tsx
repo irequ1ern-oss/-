@@ -59,7 +59,8 @@ export function AboutScreen({ back }: { back?: BackInfo }) {
   const { demo } = useAppData();
   const offline = useOfflineState();
   const persisted = usePersisted();
-  const icon = `${import.meta.env.BASE_URL}icons/icon-192.png`;
+  // Новая вишнёвая иконка. Файлы иконок для установки (PNG и манифест) заменим при переносе дизайна в приложение.
+  const icon = `${import.meta.env.BASE_URL}icons/icon-v2.svg`;
 
   return (
     <Screen title="О приложении" back={back}>

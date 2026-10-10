@@ -15,13 +15,13 @@ const UI = [
   'arrows-clockwise', 'swap', 'flame', 'moon-stars', 'sun', 'sparkle', 'users', 'chalkboard-teacher', 'tray',
   'calendar-plus', 'arrow-right', 'confetti', 'wifi-slash', 'cloud-check', 'shield', 'git-branch', 'book-bookmark',
   'pencil-simple', 'clock-countdown', 'bell', 'paint-brush', 'arrow-u-up-left', 'hand-tap', 'flag',
-  'arrow-square-out',
+  'arrow-square-out', 'check-fat',
 ];
 
 /** Иконки предметов (можно выбрать в настройках). */
 export const SUBJECT_ICONS = [
   'ruler', 'toolbox', 'atom', 'cube', 'gear', 'wrench', 'cpu', 'factory', 'scroll', 'bank', 'shield-check',
-  'chart-line-up', 'compass-tool', 'pencil-ruler', 'barbell', 'globe', 'translate', 'book-open', 'book', 'flask',
+  'trend-up', 'compass-tool', 'pencil-ruler', 'barbell', 'globe', 'translate', 'book-open', 'book', 'flask',
   'calculator', 'math-operations', 'lightning', 'magnet', 'microscope', 'code', 'desktop', 'hammer', 'screwdriver',
   'nut', 'drop', 'thermometer', 'leaf', 'heartbeat', 'music-notes', 'paint-brush', 'briefcase', 'graduation-cap',
   'users-three', 'car',

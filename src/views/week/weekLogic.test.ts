@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { resolveDay } from '../../core/schedule';
 import { override, period, sources } from '../../core/testData';
 import type { HomeworkItem } from '../../shell/app';
-import { dayMarks, dayPillLabel, directionTo, sameWeekdayIn, swipeOutcome, weekCaption, weekOffset } from './weekLogic';
+import { formatWeekRange } from '../../core/format';
+import { weekDays } from '../../core/week';
+import {
+  dayMarks, dayPillLabel, dayTitle, directionTo, formatDayRange, sameWeekdayIn, swipeOutcome, weekCaption, weekOffset, weekTitle,
+} from './weekLogic';
 
 describe('подпись недели', () => {
   it('смещение считается по понедельникам', () => {
@@ -22,6 +26,30 @@ describe('подпись недели', () => {
     expect(weekCaption(21)).toBe('Через 21 неделю');
     expect(weekCaption(-2)).toBe('2 недели назад');
     expect(weekCaption(-11)).toBe('11 недель назад');
+  });
+});
+
+describe('заголовок недели', () => {
+  it('промежуток в том же виде, что formatWeekRange', () => {
+    expect(formatDayRange('2026-10-12', '2026-10-16')).toBe('12–16 октября');
+    expect(formatDayRange('2026-09-28', '2026-10-02')).toBe('28 сентября – 2 октября');
+    expect(formatDayRange('2026-10-12', '2026-10-12')).toBe('12 октября');
+    for (const monday of ['2026-10-12', '2026-09-28', '2026-12-28', '2027-03-29']) {
+      expect(formatDayRange(monday, weekDays(monday, sources()).at(-1)!.date)).toBe(formatWeekRange(monday));
+    }
+  });
+
+  it('по дням, которые видны в полосе: с субботой — до субботы', () => {
+    expect(weekTitle(weekDays('2026-10-12', sources()))).toBe('12–16 октября');
+    const sat = sources({ overrides: [override({ date: '2026-10-17', action: 'add', lesson: { start: '09:00', end: '10:00', subjectId: 'ig' } })] });
+    expect(weekTitle(weekDays('2026-10-12', sat))).toBe('12–17 октября');
+    const sun = sources({ overrides: [override({ date: '2026-10-04', action: 'add', lesson: { start: '09:00', end: '10:00', subjectId: 'ig' } })] });
+    expect(weekTitle(weekDays('2026-09-28', sun))).toBe('28 сентября – 4 октября');
+  });
+
+  it('заголовок дня: сегодня — без дня недели', () => {
+    expect(dayTitle('2026-10-12', '2026-10-12')).toBe('Сегодня, 12 октября');
+    expect(dayTitle('2026-10-15', '2026-10-12')).toBe('Четверг, 15 октября');
   });
 });
 

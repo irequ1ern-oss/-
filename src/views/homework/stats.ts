@@ -20,6 +20,30 @@ export interface WeekStats {
   onTime: number;
 }
 
+/** Кольцо статистики и строка легенды рядом с ним. */
+export interface WeekRing {
+  id: 'done' | 'onTime';
+  label: string;
+  /** Доля для кольца, 0…1. */
+  value: number;
+  /** «2 из 6» — и в легенде, и для диктора. */
+  caption: string;
+}
+
+/**
+ * Оба кольца — доля от всех ДЗ недели, поэтому и подписи одинаковые: «Сделано 4 из 6», «Вовремя 3 из 6».
+ * Внутреннее кольцо не больше внешнего; разница между ними — то, что сделано с опозданием.
+ */
+export function weekRings(s: WeekStats): WeekRing[] {
+  const ring = (id: WeekRing['id'], label: string, n: number): WeekRing => ({
+    id,
+    label,
+    value: s.total ? n / s.total : 0,
+    caption: `${n} из ${s.total}`,
+  });
+  return [ring('done', 'Сделано', s.done), ring('onTime', 'Вовремя', s.onTime)];
+}
+
 /** Сделано не позже срока. */
 export function doneOnTime(item: TrackedHomework): boolean {
   return item.done && (!item.doneAt || item.doneAt <= item.due);

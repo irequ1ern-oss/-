@@ -2,7 +2,6 @@
 // До этапа 3 настоящих ДЗ нет — экран-заглушка; в превью — примерные данные (изменения не сохраняются).
 
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { addDays } from '../../core/time';
 import { useAppData, useSubject } from '../../shell/app';
 import { useClock } from '../../shell/clock';
 import { ActivityRings } from '../../ui/ActivityRings';
@@ -14,10 +13,10 @@ import { SwipeRow, type SwipeAction } from '../../ui/SwipeRow';
 import { haptic } from '../../ui/haptics';
 import { showToast } from '../../ui/overlays';
 import {
-  dueLabel, groupHomework, isOverdue, postpone, postponeToastText, removeHomework, replaceHomework,
+  dueLabel, groupHomework, isOverdue, postpone, postponedDue, postponeToastText, removeHomework, replaceHomework,
   restoreHomework, setDone, streakText,
 } from './homeworkLogic';
-import { hasOverdue, streakDays, weekStats, type TrackedHomework } from './stats';
+import { hasOverdue, streakDays, weekRings, weekStats, type TrackedHomework, type WeekRing } from './stats';
 import { useHomework } from './store';
 import './homework.css';
 
@@ -31,7 +30,7 @@ interface RowHandlers {
 }
 
 export function HomeworkView() {
-  const { homework: source } = useAppData();
+  const { homework: source, src } = useAppData();
   const [items, update] = useHomework();
   const today = useClock('minute').date;
   const { groups, done } = useMemo(() => groupHomework(items, today), [items, today]);
@@ -49,9 +48,10 @@ export function HomeworkView() {
       }
     },
     onPostpone(item) {
-      update((list) => postpone(list, item.id));
+      const due = postponedDue(item, today, src);
+      update((list) => postpone(list, item.id, due));
       showToast({
-        text: postponeToastText(addDays(item.due, 1), today),
+        text: postponeToastText(due, today),
         icon: 'calendar-plus',
         actionLabel: 'Отменить',
         onAction: () => update((list) => replaceHomework(list, item)),
@@ -110,28 +110,26 @@ export function HomeworkView() {
 
 // ---------- Кольца за неделю ----------
 
+const RING_COLORS: Record<WeekRing['id'], string> = { done: 'var(--accent)', onTime: 'var(--success)' };
+
 function StatsCard({ items, today }: { items: TrackedHomework[]; today: string }) {
   const s = weekStats(items, today);
   const streak = streakDays(items, today);
   const overdue = hasOverdue(items, today);
-  const rings = [
-    { value: s.total ? s.done / s.total : 0, color: 'var(--accent)', label: 'Сделано', caption: `${s.done} из ${s.total}` },
-    { value: s.total ? s.onTime / s.total : 0, color: 'var(--success)', label: 'Вовремя', caption: `${s.onTime} из ${s.total}` },
-  ];
+  // Легенда и кольца из одного списка — подписи у них не расходятся.
+  const rings = weekRings(s).map((r) => ({ ...r, color: RING_COLORS[r.id] }));
   return (
     <Group header="Эта неделя" class="hw-stats">
       <div class="hw-stats__main">
         <ActivityRings rings={rings} size={108} stroke={14} />
         {s.total > 0 ? (
           <dl class="hw-stats__legend">
-            <div class="hw-stats__item" style="--c:var(--accent)">
-              <dt class="t-subhead">Сделано</dt>
-              <dd class="t-title2 tabular">{`${s.done} из ${s.total}`}</dd>
-            </div>
-            <div class="hw-stats__item" style="--c:var(--success)">
-              <dt class="t-subhead">Вовремя</dt>
-              <dd class="t-title2 tabular">{s.onTime}</dd>
-            </div>
+            {rings.map((r) => (
+              <div key={r.id} class="hw-stats__item" style={`--c:${r.color}`}>
+                <dt class="t-subhead">{r.label}</dt>
+                <dd class="t-title2 tabular">{r.caption}</dd>
+              </div>
+            ))}
           </dl>
         ) : (
           <p class="hw-stats__none t-subhead t-secondary">На этой неделе заданий нет</p>

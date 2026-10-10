@@ -4,7 +4,6 @@
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { resolveDay } from '../../core/schedule';
 import { defaultStripDay, shiftStripDay, weekDays } from '../../core/week';
-import { formatWeekRange } from '../../core/format';
 import { startOfWeek, type DateStr } from '../../core/time';
 import { useHomework } from '../homework/store';
 import { useAppData } from '../../shell/app';
@@ -15,7 +14,7 @@ import { haptic } from '../../ui/haptics';
 import { DayPager, reducedMotion, type PendingMove } from './DayPager';
 import { DayPanel } from './DayPanel';
 import { DayStrip, PANEL_ID, tabId } from './DayStrip';
-import { directionTo, sameWeekdayIn, weekCaption, weekOffset } from './weekLogic';
+import { directionTo, sameWeekdayIn, weekCaption, weekOffset, weekTitle } from './weekLogic';
 import './week.css';
 
 /**
@@ -70,7 +69,7 @@ export function WeekView() {
   return (
     <Screen
       class="week-screen"
-      title={formatWeekRange(monday)}
+      title={weekTitle(days)}
       above={<p class="week-above t-footnote t-upper t-secondary">{weekCaption(weekOffset(clock.date, shown))}</p>}
       trailing={
         <div class="week-nav">

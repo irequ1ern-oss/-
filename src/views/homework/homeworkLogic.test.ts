@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  dueLabel, eventDateLabel, formatShortDate, groupHomework, groupOf, isOverdue, postpone, postponeToastText, removeHomework,
-  replaceHomework, restoreHomework, setDone, streakText, upcomingEvents, upcomingHomework,
+  dueLabel, eventDateLabel, formatShortDate, groupHomework, groupOf, isOverdue, postpone, postponedDue, postponeToastText,
+  removeHomework, replaceHomework, restoreHomework, setDone, streakText, upcomingEvents, upcomingHomework,
 } from './homeworkLogic';
 import type { TrackedHomework } from './stats';
 import type { EventItem } from '../../shell/app';
+import { override, sources } from '../../core/testData';
 
 const hw = (id: string, due: string, done = false): TrackedHomework => ({ id, subjectId: 'mss', title: id, due, done });
 
@@ -101,9 +102,10 @@ describe('изменения списка', () => {
     expect(setDone(done, 'b', false, TODAY)[1]).toEqual(items[1]);
   });
 
-  it('postpone сдвигает срок', () => {
-    expect(postpone(items, 'c')[2].due).toBe('2026-10-16');
-    expect(postpone(items, 'a', 2)[0].due).toBe('2026-10-15');
+  it('postpone ставит новый срок только этому ДЗ', () => {
+    const moved = postpone(items, 'c', '2026-10-16');
+    expect(moved[2]).toEqual({ ...items[2], due: '2026-10-16' });
+    expect(moved[0]).toBe(items[0]);
   });
 
   it('remove + restore возвращают на прежнее место', () => {
@@ -124,6 +126,39 @@ describe('изменения списка', () => {
   it('replaceHomework', () => {
     const changed = { ...items[0], title: 'новое' };
     expect(replaceHomework(items, changed)[0].title).toBe('новое');
+  });
+});
+
+describe('postponedDue: новый срок — следующая пара предмета', () => {
+  // В тестовом расписании МСС — по понедельникам и пятницам, ИГ — по средам и четвергам.
+  const src = sources();
+  const item = (subjectId: string, due: string) => ({ subjectId, due });
+
+  it('срок впереди — следующая пара после него', () => {
+    expect(postponedDue(item('mss', '2026-10-16'), TODAY, src)).toBe('2026-10-19');
+    expect(postponedDue(item('ig', '2026-10-15'), TODAY, src)).toBe('2026-10-21');
+  });
+
+  it('срок сегодня — следующая пара после сегодняшней', () => {
+    expect(postponedDue(item('ig', TODAY), TODAY, src)).toBe('2026-10-15');
+  });
+
+  it('просроченное — от сегодняшнего дня, а не от старого срока', () => {
+    // Срок 7-го, сегодня 14-е: не 8-е (тоже в прошлом), а ближайшая пара МСС — пятница.
+    const due = postponedDue(item('mss', '2026-10-07'), TODAY, src);
+    expect(due).toBe('2026-10-16');
+    expect(due > TODAY).toBe(true);
+    expect(postponeToastText(due, TODAY)).toBe('Срок перенесён на пт, 16 окт.');
+  });
+
+  it('отменённая пара пропускается', () => {
+    const cancelled = sources({ overrides: [override({ date: '2026-10-16', action: 'cancelDay' })] });
+    expect(postponedDue(item('mss', '2026-10-07'), TODAY, cancelled)).toBe('2026-10-19');
+  });
+
+  it('пар предмета нет — следующий день после сегодня или после срока', () => {
+    expect(postponedDue(item('nope', '2026-10-07'), TODAY, src)).toBe('2026-10-15');
+    expect(postponedDue(item('nope', '2026-10-20'), TODAY, src)).toBe('2026-10-21');
   });
 });
 

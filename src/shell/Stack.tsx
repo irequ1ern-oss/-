@@ -64,7 +64,8 @@ export function Stack({ route, settingsOverToday, render, titleOf, onBack }: Pro
   };
 
   // ---------- Свайп от левого края ----------
-  const drag = useRef<{ x0: number; t0: number; dx: number } | null>(null);
+  // samples — последние точки пальца (≈100 мс): скорость «броска» считаем по ним, как в DayPager и SwipeRow.
+  const drag = useRef<{ x0: number; dx: number; samples: { dx: number; t: number }[] } | null>(null);
   // После свайпа слои стоят там, куда их дотянули, пока не сменится экран: history.back() срабатывает
   // не сразу, и без этого верхний экран на кадр вернулся бы на место.
   const swiped = useRef<HTMLElement[]>([]);
@@ -82,7 +83,7 @@ export function Stack({ route, settingsOverToday, render, titleOf, onBack }: Pro
     return els ? [els[els.length - 2], els[els.length - 1]] : [undefined, undefined];
   };
   const onEdgeDown = (e: PointerEvent) => {
-    drag.current = { x0: e.clientX, t0: performance.now(), dx: 0 };
+    drag.current = { x0: e.clientX, dx: 0, samples: [{ dx: 0, t: performance.now() }] };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
   const onEdgeMove = (e: PointerEvent) => {
@@ -90,6 +91,10 @@ export function Stack({ route, settingsOverToday, render, titleOf, onBack }: Pro
     const width = container.current?.clientWidth ?? 1;
     const dx = Math.max(0, Math.min(width, e.clientX - drag.current.x0));
     drag.current.dx = dx;
+    const now = performance.now();
+    const samples = drag.current.samples;
+    samples.push({ dx, t: now });
+    while (samples.length > 2 && now - samples[0].t > 100) samples.shift();
     const [below, top] = layersEls();
     if (top) {
       top.style.transition = 'none';
@@ -106,10 +111,13 @@ export function Stack({ route, settingsOverToday, render, titleOf, onBack }: Pro
     drag.current = null;
     if (!d) return;
     const width = container.current?.clientWidth ?? 1;
-    const velocity = d.dx / Math.max(1, performance.now() - d.t0);
-    const commit = d.dx > width * 0.35 || (d.dx > 30 && velocity > 0.5);
+    const first = d.samples[0];
+    const velocity = (d.dx - first.dx) / Math.max(1, performance.now() - first.t);
+    const commit = d.dx > width * 0.35 || (d.dx > 30 && velocity > 0.3);
     const [below, top] = layersEls();
-    const ease = 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)';
+    // При «уменьшении движения» — без доводки: сразу на место или сразу назад.
+    const settle = reducedMotion() ? 0 : 320;
+    const ease = settle ? 'transform var(--dur-2) var(--ease-ios)' : 'none';
     if (top) {
       top.style.transition = ease;
       top.style.transform = commit ? 'translateX(100%)' : '';
@@ -129,7 +137,7 @@ export function Stack({ route, settingsOverToday, render, titleOf, onBack }: Pro
         skipNext.current = false;
         clearSwipe();
       }, 1000);
-    }, 300);
+    }, settle);
   };
 
   const a = anim.current;

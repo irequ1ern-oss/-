@@ -64,7 +64,7 @@
   padding: var(--space-2) 2px;
   border-radius: var(--r-group);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   box-shadow: var(--shadow-card);
 }
 
@@ -185,19 +185,6 @@
 
 .week-day__title {
   min-width: 0;
-}
-
-.week-day__tag {
-  display: inline-flex;
-  align-items: center;
-  height: 20px;
-  margin-left: var(--space-2);
-  padding: 0 7px;
-  border-radius: var(--r-pill);
-  background: var(--accent-tint);
-  color: var(--accent);
-  font-weight: 600;
-  vertical-align: 2px;
 }
 
 .week-day__count {

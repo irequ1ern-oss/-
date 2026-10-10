@@ -1,6 +1,7 @@
 // Строка пары в списке: иконка предмета, сокращение, время, кабинет.
 // Нажатие — карточка предмета, долгое нажатие — контекстное меню.
 
+import { Fragment } from 'preact';
 import type { ResolvedLesson } from '../core/schedule';
 import { lessonRoom } from '../core/schedule';
 import type { LessonPhase } from '../core/today';
@@ -33,7 +34,18 @@ export function LessonRow({ lesson, phase = 'upcoming', extra }: Props) {
   const room = formatRoom(lessonRoom(lesson, subgroup));
   const status = STATUS[lesson.status];
   const time = `${lesson.start}–${lesson.end}`;
-  const subtitle = [time, phase === 'current' ? 'идёт сейчас' : extra].filter(Boolean).join(' · ');
+  // Части подписи не разрываются внутри («через 37 мин», «идёт сейчас») — перенос только между ними.
+  const parts = [time, phase === 'current' ? 'идёт сейчас' : extra].filter((p): p is string => Boolean(p));
+  const subtitle = (
+    <span class="tabular">
+      {parts.map((p, i) => (
+        <Fragment key={i}>
+          {i > 0 && ' · '}
+          <span class="nowrap">{p}</span>
+        </Fragment>
+      ))}
+    </span>
+  );
 
   const row = (interactive: boolean) => (
     <Cell
@@ -46,7 +58,7 @@ export function LessonRow({ lesson, phase = 'upcoming', extra }: Props) {
           {status && <span class={`chip chip--${lesson.status}`}>{status}</span>}
         </span>
       }
-      subtitle={<span class="tabular">{subtitle}</span>}
+      subtitle={subtitle}
       value={room || undefined}
       highlight={phase === 'current'}
       dimmed={phase === 'past'}

@@ -14,7 +14,7 @@ const NAMES: Partial<Record<IconName, string>> = {
   scroll: 'Свиток',
   bank: 'Здание с колоннами',
   'shield-check': 'Щит с галочкой',
-  'chart-line-up': 'График роста',
+  'trend-up': 'График роста',
   'compass-tool': 'Циркуль',
   'pencil-ruler': 'Карандаш и линейка',
   barbell: 'Штанга',

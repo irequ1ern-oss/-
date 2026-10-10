@@ -377,8 +377,11 @@ export function SwipeRow({ leading, trailing = [], children, label }: Props) {
       /** Tab на кнопку действия открывает строку с её стороны, возврат к содержимому — закрывает. */
       onFocusIn(e: FocusEvent) {
         if (busy) return;
-        const layer = (e.target as Element).closest('.swipe-row__actions');
+        const target = e.target as Element;
+        const layer = target.closest('.swipe-row__actions');
         if (layer) {
+          // Только для клавиатуры: фокус, который вернула закрытая шторка («Отмена»), строку не открывает.
+          if (!target.matches(':focus-visible')) return;
           const side: SwipeSide = layer.classList.contains('swipe-row__actions--leading') ? 'leading' : 'trailing';
           if ((side === 'leading' && offset <= 0) || (side === 'trailing' && offset >= 0)) open(side);
         } else if (offset !== 0 && !gesture) {

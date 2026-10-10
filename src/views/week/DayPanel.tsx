@@ -2,7 +2,7 @@
 
 import { activeLessons, dayHasChanges, type ResolvedDay } from '../../core/schedule';
 import { lessonPhase } from '../../core/today';
-import { capitalize, formatDDMM, formatDayLong, lessonsCount } from '../../core/format';
+import { formatDDMM, lessonsCount } from '../../core/format';
 import type { Clock } from '../../core/time';
 import { useSubject, type HomeworkItem } from '../../shell/app';
 import { navigate } from '../../shell/nav';
@@ -10,6 +10,7 @@ import { Cell, EmptyState, Group } from '../../ui/List';
 import { Icon } from '../../ui/Icon';
 import { SubjectIcon } from '../../ui/SubjectIcon';
 import { LessonRow } from '../LessonRow';
+import { dayTitle } from './weekLogic';
 
 interface Props {
   day: ResolvedDay;
@@ -20,16 +21,12 @@ interface Props {
 export function DayPanel({ day, clock, homework }: Props) {
   const count = activeLessons(day).length;
   const due = homework.filter((h) => !h.done && h.due === day.date);
-  const isToday = day.date === clock.date;
   const countLabel = count > 0 ? lessonsCount(count) : day.lessons.length > 0 ? 'Пары отменены' : '';
 
   return (
     <>
       <div class="week-day__head">
-        <h2 class="week-day__title t-headline">
-          {capitalize(formatDayLong(day.date))}
-          {isToday && <span class="week-day__tag t-caption">сегодня</span>}
-        </h2>
+        <h2 class="week-day__title t-headline">{dayTitle(day.date, clock.date)}</h2>
         {countLabel && <span class="week-day__count t-subhead t-secondary">{countLabel}</span>}
       </div>
 

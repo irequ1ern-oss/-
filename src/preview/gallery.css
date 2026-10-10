@@ -69,6 +69,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+/* Текст — удобной для чтения ширины, а оглавление — на всю ширину страницы (6 разделов в одну строку) */
+.gal-intro > p {
   max-width: var(--content-max);
 }
 
@@ -141,7 +145,7 @@
   padding: 0 14px;
   border-radius: var(--r-pill);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   box-shadow: var(--shadow-card);
   font-weight: 500;
   white-space: nowrap;
@@ -339,14 +343,11 @@
   gap: var(--space-2);
 }
 
-/* ---------- Планшет и ПК: телефон и планшет рядом ---------- */
+/*
+ * Планшет и ПК: списки в две колонки. Рамки устройств остаются друг под другом —
+ * рядом с телефоном горизонтальный планшет ужимался до 2/3, а на всю ширину его ограничивает только высота окна.
+ */
 @media (min-width: 1000px) {
-  .gal-devices {
-    display: grid;
-    grid-template-columns: 360px minmax(0, 1fr);
-    gap: var(--space-8);
-    align-items: start;
-  }
   .gal-cols {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

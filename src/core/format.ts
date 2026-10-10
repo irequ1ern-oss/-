@@ -23,12 +23,11 @@ export function weekdayName(date: DateStr): string {
   return WEEKDAYS[weekdayIndex(date)];
 }
 
-/** «на завтра», «на среду» — для заголовков вида «Расписание на …». */
+/** «на завтра», «на среду» — для заголовков вида «Расписание на …». Дальше завтра — по дню недели. */
 export function forDayLabel(date: DateStr, today: DateStr): string {
   const d = diffDays(today, date);
   if (d === 0) return 'на сегодня';
   if (d === 1) return 'на завтра';
-  if (d === 2) return 'на послезавтра';
   return `на ${WEEKDAYS_ACC[weekdayIndex(date)]}${d > 6 ? `, ${formatDayMonth(date)}` : ''}`;
 }
 
@@ -70,13 +69,13 @@ export function formatWeekRange(monday: DateStr): string {
   return `${formatDayMonth(monday)} – ${formatDayMonth(friday)}`;
 }
 
-/** «45 мин», «1 ч», «1 ч 20 мин» */
+/** «45 мин», «1 ч», «1 ч 20 мин». Число и единица — через неразрывный пробел (не разрываются при переносе). */
 export function formatDuration(minutes: number): string {
   const m = Math.max(0, Math.round(minutes));
-  if (m < 60) return `${m} мин`;
+  if (m < 60) return `${m}\u00a0мин`;
   const h = Math.floor(m / 60);
   const rest = m % 60;
-  return rest ? `${h} ч ${rest} мин` : `${h} ч`;
+  return rest ? `${h}\u00a0ч ${rest}\u00a0мин` : `${h}\u00a0ч`;
 }
 
 /** Склонение: plural(5, 'день', 'дня', 'дней') → «дней». */
@@ -89,12 +88,12 @@ export function plural(n: number, one: string, few: string, many: string): strin
 }
 
 /**
- * Подпись кабинета: «каб. 27», «каб. С». Слова (например «Спортзал») показываются как есть.
- * Пустая строка, если кабинет не указан.
+ * Подпись кабинета: «каб. 27», «каб. С» (через неразрывный пробел — номер не уходит на другую строку).
+ * Слова (например «Спортзал») показываются как есть. Пустая строка, если кабинет не указан.
  */
 export function formatRoom(room: string | undefined): string {
   if (!room) return '';
-  return /^\p{L}{4,}/u.test(room) ? room : `каб. ${room}`;
+  return /^\p{L}{4,}/u.test(room) ? room : `каб.\u00a0${room}`;
 }
 
 /** Таймер с секундами: «27:12», «1:05:09». */

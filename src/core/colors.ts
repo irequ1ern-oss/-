@@ -20,6 +20,12 @@ const LIGHT_HEX: Record<SubjectColor, string> = {
   green: '#34C759', yellow: '#FFCC00', orange: '#FF9500', brown: '#A2845E', gray: '#8E8E93', red: '#FF3B30', pink: '#FF2D55',
 };
 
+/** Варианты тёмной темы и AMOLED (те же, что --sc-* в tokens.css): там бирюзовый и голубой ближе друг к другу. */
+const DARK_HEX: Record<SubjectColor, string> = {
+  blue: '#0A84FF', indigo: '#5E5CE6', purple: '#BF5AF2', teal: '#40C8E0', cyan: '#64D2FF', mint: '#63E6E2',
+  green: '#30D158', yellow: '#FFD60A', orange: '#FF9F0A', brown: '#AC8E68', gray: '#8E8E93', red: '#FF453A', pink: '#FF375F',
+};
+
 /**
  * Автоматически не раздаём красный и розовый (их легко спутать с вишнёвым акцентом)
  * и серый (кольцо таймера серого цвета выглядит неактивным). Вручную в настройках можно выбрать любой.
@@ -40,12 +46,27 @@ function toLab(hex: string): [number, number, number] {
   return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
 }
 
-/** Насколько цвета различаются на глаз (ΔE в пространстве Lab; больше — заметнее). */
-export function colorDistance(a: SubjectColor, b: SubjectColor): number {
-  const [l1, a1, b1] = toLab(LIGHT_HEX[a]);
-  const [l2, a2, b2] = toLab(LIGHT_HEX[b]);
+function deltaE(hexA: string, hexB: string): number {
+  const [l1, a1, b1] = toLab(hexA);
+  const [l2, a2, b2] = toLab(hexB);
   return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
 }
+
+/**
+ * Насколько цвета различаются на глаз (ΔE в пространстве Lab; больше — заметнее).
+ * Без темы — меньшее из светлой и тёмной: цвета должны различаться в любой теме.
+ */
+export function colorDistance(a: SubjectColor, b: SubjectColor, theme?: 'light' | 'dark'): number {
+  if (theme === 'light') return deltaE(LIGHT_HEX[a], LIGHT_HEX[b]);
+  if (theme === 'dark') return deltaE(DARK_HEX[a], DARK_HEX[b]);
+  return Math.min(deltaE(LIGHT_HEX[a], LIGHT_HEX[b]), deltaE(DARK_HEX[a], DARK_HEX[b]));
+}
+
+/** Те же значения, что --sc-* в tokens.css (проверяется тестом). */
+export const SUBJECT_HEX = { light: LIGHT_HEX, dark: DARK_HEX } as const;
+
+/** Ниже этого ΔE цвета предметов одного дня легко спутать. */
+export const MIN_SAME_DAY_DISTANCE = 30;
 
 /**
  * Подбирает цвет каждому предмету. Предметы одного дня получают разные цвета,
@@ -85,7 +106,8 @@ export function assignSubjectColors(subjects: Subject[], week: Week): Record<str
         const oc = result[other];
         if (!oc) continue;
         const d = colorDistance(color, oc);
-        cost += w * (oc === color ? 100 : Math.max(0, 60 - d) / 6);
+        // Похожий цвет в тот же день хуже, чем повтор цвета у предметов из разных дней.
+        cost += w * (oc === color ? 100 : (d < MIN_SAME_DAY_DISTANCE ? 50 : 0) + Math.max(0, 60 - d) / 6);
       }
       if (cost < bestCost) {
         bestCost = cost;

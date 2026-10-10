@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { computeHero } from './hero';
+import { computeHero, tickHero } from './hero';
 import { override, period, sources } from './testData';
 import { clockAt } from './time';
+import type { Lesson } from './schedule';
+
+const lesson = (start: string, end: string): Lesson => ({ start, end, subjectId: 'prac', room: '1' });
 
 // Тестовое расписание: пн 09:00–10:40 МСС, 10:50–12:40 ПФО; ср 09:00–09:45 ИГ;
 // чт 09:00–10:40 ИГ, 10:50–11:35 ИГ; пт 13:00–14:40 МСС. 2026-10-12 — понедельник.
@@ -72,6 +75,45 @@ describe('computeHero: пять состояний главного блока',
     expect(computeHero(clockAt('2026-10-12', '10:40:00'), sources()).hero.kind).toBe('break');
     expect(computeHero(clockAt('2026-10-12', '12:39:59'), sources()).hero.kind).toBe('lesson');
     expect(computeHero(clockAt('2026-10-12', '12:40:00'), sources()).hero.kind).toBe('after');
+  });
+
+  it('временное расписание с парами: пустой день — выходной или «free», а не каникулы', () => {
+    // «Практика» с 19 по 31 октября: пары по будням, кроме среды.
+    const week = { mon: [lesson('09:00', '14:00')], tue: [lesson('09:00', '14:00')], thu: [lesson('09:00', '14:00')], fri: [lesson('09:00', '14:00')] };
+    const src = sources({ periods: [period({ from: '2026-10-19', to: '2026-10-31', title: 'Практика', week })] });
+    const sat = computeHero(clockAt('2026-10-24', '11:00'), src).hero;
+    expect(sat).toMatchObject({ kind: 'dayoff', reason: 'weekend' });
+    if (sat.kind === 'dayoff') expect(sat.next?.day.date).toBe('2026-10-26');
+    expect(computeHero(clockAt('2026-10-21', '11:00'), src).hero).toMatchObject({ kind: 'dayoff', reason: 'free' });
+    // Период совсем без пар — каникулы, в том числе в выходные.
+    const empty = sources({ periods: [period({ from: '2026-10-19', to: '2026-10-31', title: 'Каникулы' })] });
+    expect(computeHero(clockAt('2026-10-24', '11:00'), empty).hero).toMatchObject({ kind: 'dayoff', reason: 'holiday' });
+  });
+
+  it('ближайший учебный день запоминается по дате', () => {
+    const src = sources();
+    const a = computeHero(clockAt('2026-10-17', '11:00'), src).hero;
+    const b = computeHero(clockAt('2026-10-17', '11:01'), src).hero;
+    expect(a.kind === 'dayoff' && b.kind === 'dayoff' && a.next === b.next).toBe(true);
+    const c = computeHero(clockAt('2026-10-18', '11:00'), src).hero;
+    expect(c.kind === 'dayoff' && c.next?.daysAhead).toBe(1);
+  });
+
+  it('changesAt — ближайшая граница пары; tickHero двигает таймеры внутри состояния', () => {
+    const at = (t: string) => computeHero(clockAt('2026-10-12', t), sources());
+    expect(at('08:18').changesAt).toBe(9 * 3600);
+    expect(at('10:12:48').changesAt).toBe(10 * 3600 + 40 * 60);
+    expect(at('10:45').changesAt).toBe(10 * 3600 + 50 * 60);
+    expect(at('12:40').changesAt).toBeUndefined();
+    expect(computeHero(clockAt('2026-10-17', '11:00'), sources()).changesAt).toBeUndefined();
+
+    // Таймер, сдвинутый на секунды вперёд, совпадает с тем, что посчитал бы computeHero в эту секунду.
+    const lessonHero = at('10:12:00').hero;
+    expect(tickHero(lessonHero, clockAt('2026-10-12', '10:12:48').seconds)).toEqual(at('10:12:48').hero);
+    const breakHero = at('10:45:00').hero;
+    expect(tickHero(breakHero, clockAt('2026-10-12', '10:47:30').seconds)).toEqual(at('10:47:30').hero);
+    // За границей таймер не уходит в минус.
+    expect(tickHero(lessonHero, clockAt('2026-10-12', '10:41').seconds)).toMatchObject({ secondsLeft: 0, progress: 1 });
   });
 
   it('отменённая пара пропускается: следующей становится незанятая', () => {

@@ -46,6 +46,28 @@ function SubjectRow({ id }: { id: string }) {
   );
 }
 
+/**
+ * Клавиатура в группе вариантов (role=radiogroup) с «блуждающим» tabindex: в группу попадаешь одним Tab,
+ * стрелки выбирают соседний вариант по кругу, Home/End — первый и последний, фокус идёт за выбором.
+ * В сетке иконок ↑ ↓ работают так же, как ← → (предыдущий/следующий) — просто и предсказуемо.
+ */
+function radioKeys<T>(options: readonly T[], value: T, pick: (v: T) => void) {
+  return (e: KeyboardEvent) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return; // Alt+← — «Назад» в браузере
+    const n = options.length;
+    const i = Math.max(0, options.indexOf(value));
+    let j = -1;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') j = (i + 1) % n;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') j = (i - 1 + n) % n;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = n - 1;
+    if (j < 0) return;
+    e.preventDefault();
+    pick(options[j]);
+    (e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role="radio"]')[j]?.focus();
+  };
+}
+
 /** Поля оформления (без преподавателя — его кнопка «Сбросить» не трогает). */
 const LOOK_KEYS: (keyof SubjectPrefs)[] = ['color', 'icon', 'short'];
 
@@ -68,6 +90,8 @@ export function SubjectEditor({ id, back }: { id: string; back?: BackInfo }) {
   const hasLook = LOOK_KEYS.some((k) => prefs[k] !== undefined);
   // Иконка из schedule.json может не входить в общий набор — тогда показываем её первой.
   const icons: IconName[] = SUBJECT_ICON_NAMES.includes(defaults.icon) ? SUBJECT_ICON_NAMES : [defaults.icon, ...SUBJECT_ICON_NAMES];
+  // Вариант, на котором стоит Tab: выбранный (а если выбранной иконки нет в наборе — первый).
+  const tabIcon = icons.includes(subject.icon) ? subject.icon : icons[0];
 
   const pickColor = (color: SubjectColor) => {
     if (color === subject.color) return;
@@ -113,12 +137,13 @@ export function SubjectEditor({ id, back }: { id: string; back?: BackInfo }) {
 
         <Group header="Цвет">
           <div class="picker">
-            <div class="swatches" role="radiogroup" aria-label="Цвет">
+            <div class="swatches" role="radiogroup" aria-label="Цвет" onKeyDown={radioKeys(SUBJECT_COLORS, subject.color, pickColor)}>
               {SUBJECT_COLORS.map((c) => (
                 <button
                   key={c}
                   role="radio"
                   aria-checked={c === subject.color}
+                  tabIndex={c === subject.color ? 0 : -1}
                   aria-label={c === defaults.color ? `${COLOR_NAMES[c]} (автоматический)` : COLOR_NAMES[c]}
                   title={COLOR_NAMES[c]}
                   class={`swatch${c === subject.color ? ' is-selected' : ''}`}
@@ -139,20 +164,31 @@ export function SubjectEditor({ id, back }: { id: string; back?: BackInfo }) {
         </Group>
 
         <Group header="Иконка">
-          <div class="icon-picks" role="radiogroup" aria-label="Иконка" style={`--c:var(--sc-${subject.color})`}>
-            {icons.map((name) => (
-              <button
-                key={name}
-                role="radio"
-                aria-checked={name === subject.icon}
-                aria-label={name === defaults.icon ? `${iconTitle(name)} (по умолчанию)` : iconTitle(name)}
-                title={iconTitle(name)}
-                class={`icon-pick${name === subject.icon ? ' is-selected' : ''}`}
-                onClick={() => pickIcon(name)}
-              >
-                <SubjectIcon color={subject.color} icon={name} size={44} />
-              </button>
-            ))}
+          {/* Как в «Напоминаниях» iOS: варианты — серые плитки, цветом предмета — только выбранная */}
+          <div class="icon-picks" role="radiogroup" aria-label="Иконка" onKeyDown={radioKeys(icons, subject.icon, pickIcon)}>
+            {icons.map((name) => {
+              const selected = name === subject.icon;
+              return (
+                <button
+                  key={name}
+                  role="radio"
+                  aria-checked={selected}
+                  tabIndex={name === tabIcon ? 0 : -1}
+                  aria-label={name === defaults.icon ? `${iconTitle(name)} (по умолчанию)` : iconTitle(name)}
+                  title={iconTitle(name)}
+                  class={`icon-pick${selected ? ' is-selected' : ''}`}
+                  onClick={() => pickIcon(name)}
+                >
+                  {selected ? (
+                    <SubjectIcon color={subject.color} icon={name} size={44} />
+                  ) : (
+                    <span class="icon-pick__tile" aria-hidden="true">
+                      <Icon name={name} weight="fill" size={26} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </Group>
 

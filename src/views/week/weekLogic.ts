@@ -2,7 +2,7 @@
 
 import { activeLessons, dayHasChanges, type ResolvedDay, type ScheduleSources } from '../../core/schedule';
 import { weekDays } from '../../core/week';
-import { capitalize, formatDayLong, lessonsCount, plural } from '../../core/format';
+import { capitalize, formatDayLong, formatDayMonth, lessonsCount, plural } from '../../core/format';
 import { addDays, diffDays, startOfWeek, weekdayIndex, type DateStr } from '../../core/time';
 import type { HomeworkItem } from '../../shell/app';
 
@@ -19,6 +19,29 @@ export function weekCaption(offset: number): string {
   const n = Math.abs(offset);
   const weeks = `${n} ${plural(n, 'неделю', 'недели', 'недель')}`;
   return offset > 0 ? `Через ${weeks}` : `${capitalize(weeks)} назад`;
+}
+
+/**
+ * Промежуток дат в том же виде, что formatWeekRange: «12–16 октября», «29 сентября – 3 октября».
+ * Заголовок «Недели» строим по дням, которые видны в полосе: с субботой — «12–17 октября».
+ */
+export function formatDayRange(first: DateStr, last: DateStr): string {
+  if (first === last) return formatDayMonth(first);
+  if (first.slice(0, 7) === last.slice(0, 7)) return `${Number(first.slice(8, 10))}–${formatDayMonth(last)}`;
+  return `${formatDayMonth(first)} – ${formatDayMonth(last)}`;
+}
+
+/** Заголовок недели: от первого до последнего дня полосы. */
+export function weekTitle(days: ResolvedDay[]): string {
+  return formatDayRange(days[0].date, days[days.length - 1].date);
+}
+
+/**
+ * Заголовок над парами дня: «Четверг, 15 октября», а сегодня — «Сегодня, 12 октября»
+ * (день недели уже виден в полосе, а метка «сегодня» рядом с длинной датой не помещается на 360 px).
+ */
+export function dayTitle(date: DateStr, today: DateStr): string {
+  return date === today ? `Сегодня, ${formatDayMonth(date)}` : capitalize(formatDayLong(date));
 }
 
 /** Точки под днём: изменения в расписании и невыполненные ДЗ со сроком в этот день. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayHasOverdue, doneOnTime, hasOverdue, streakDays, weekStats, type TrackedHomework } from './stats';
+import { dayHasOverdue, doneOnTime, hasOverdue, streakDays, weekRings, weekStats, type TrackedHomework } from './stats';
 
 const hw = (id: string, due: string, done = false, doneAt?: string): TrackedHomework => ({
   id, subjectId: 'mss', title: id, due, done, ...(doneAt ? { doneAt } : {}),
@@ -31,6 +31,25 @@ describe('weekStats', () => {
 
   it('в воскресенье неделя та же, с понедельника', () => {
     expect(weekStats([hw('a', '2026-10-12', true)], '2026-10-18').total).toBe(1);
+  });
+});
+
+describe('weekRings', () => {
+  it('оба кольца и подписи — от всех ДЗ недели', () => {
+    expect(weekRings({ total: 6, done: 2, onTime: 2 })).toEqual([
+      { id: 'done', label: 'Сделано', value: 2 / 6, caption: '2 из 6' },
+      { id: 'onTime', label: 'Вовремя', value: 2 / 6, caption: '2 из 6' },
+    ]);
+    const [done, onTime] = weekRings({ total: 4, done: 3, onTime: 1 });
+    expect([done.value, onTime.value]).toEqual([0.75, 0.25]);
+    expect(onTime.caption).toBe('1 из 4');
+  });
+
+  it('заданий на неделе нет — кольца пустые', () => {
+    expect(weekRings({ total: 0, done: 0, onTime: 0 }).map((r) => [r.value, r.caption])).toEqual([
+      [0, '0 из 0'],
+      [0, '0 из 0'],
+    ]);
   });
 });
 
