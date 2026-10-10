@@ -50,8 +50,8 @@
 }
 
 .hero__timer {
-  font-size: 30px;
-  line-height: 36px;
+  font-size: var(--fs-timer);
+  line-height: var(--lh-timer);
   font-weight: 650;
   letter-spacing: -0.02em;
 }

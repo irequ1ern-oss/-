@@ -61,10 +61,12 @@ export function useLongPress({ onLongPress, onPress, delay = 450 }: LongPressOpt
   };
 
   const fire = (target: HTMLElement) => {
-    fired.current = true;
     haptic('medium');
+    // Палец ещё на экране: клик отпускания проглотим, а до тех пор fired не даёт открыть меню
+    // второй раз (сработать могут и таймер, и contextmenu). Правый клик и клавиатура клика не шлют.
     if (down.current) {
       down.current = false;
+      fired.current = true;
       swallowReleaseClick(() => (fired.current = false));
     }
     onLongPress(target);
