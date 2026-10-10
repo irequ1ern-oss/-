@@ -88,7 +88,7 @@ export default defineConfig({
     rememberOutDir,
     preact(),
     VitePWA({
-      // Новая версия ставится сама и включается при следующем открытии приложения.
+      // Новая версия скачивается и включается сама (skipWaiting ниже); приложение предлагает перезагрузить экран.
       registerType: 'prompt',
       includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
@@ -101,8 +101,9 @@ export default defineConfig({
         scope: base,
         display: 'standalone',
         orientation: 'any',
-        background_color: '#f4f6f9',
-        theme_color: '#2563eb',
+        // Цвет фона светлой темы (--bg): заставка при запуске и полоса сверху до загрузки приложения.
+        background_color: '#f2f2f7',
+        theme_color: '#f2f2f7',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },

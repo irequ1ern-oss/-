@@ -1,57 +1,36 @@
-// Установка как приложение и работа без интернета (service worker),
-// плюс просьба к браузеру не удалять данные приложения.
+// Работа без интернета (service worker), обновления и защита данных от очистки.
 
-import { useEffect, useState } from 'preact/hooks';
 import { registerSW } from 'virtual:pwa-register';
-
-interface PwaState {
-  /** Вышла новая версия — можно обновиться. */
-  needRefresh: boolean;
-  /** Всё нужное скачано, приложение работает без интернета. */
-  offlineReady: boolean;
-}
-
-let state: PwaState = { needRefresh: false, offlineReady: false };
-const listeners = new Set<(s: PwaState) => void>();
-
-function setState(patch: Partial<PwaState>) {
-  state = { ...state, ...patch };
-  listeners.forEach((l) => l(state));
-}
-
-let updateSW: ((reload?: boolean) => Promise<void>) | undefined;
+import { getSettings, updateSettings } from './state/settings';
+import { showToast } from './ui/overlays';
 
 export function setupPwa() {
-  updateSW = registerSW({
-    onNeedRefresh: () => setState({ needRefresh: true }),
-    onOfflineReady: () => setState({ offlineReady: true }),
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+  // Если страницей уже управлял service worker, то смена управляющего — это вышла новая версия.
+  const hadController = Boolean(navigator.serviceWorker.controller);
+
+  registerSW({
+    immediate: true,
+    // Первый запуск: всё скачано, дальше приложение откроется и без сети. Говорим об этом один раз.
+    onOfflineReady() {
+      if (getSettings().offlineToastShown) return;
+      updateSettings({ offlineToastShown: true });
+      showToast({ text: 'Готово: приложение работает без интернета', icon: 'cloud-check' });
+    },
   });
-  // Без этого браузер может стереть данные при нехватке места.
+
+  // Новая версия включается сама (skipWaiting), но экран ещё старый — предлагаем перезагрузить.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return;
+    showToast({
+      text: 'Вышла новая версия',
+      icon: 'arrows-clockwise',
+      actionLabel: 'Обновить',
+      onAction: () => location.reload(),
+      duration: 15_000,
+    });
+  });
+
+  // Без этого браузер может стереть данные приложения, когда на устройстве мало места.
   navigator.storage?.persist?.().catch(() => undefined);
-}
-
-export function applyUpdate() {
-  void updateSW?.(true);
-}
-
-export function dismissOfflineReady() {
-  setState({ offlineReady: false });
-}
-
-export function usePwaState(): PwaState {
-  const [s, setS] = useState(state);
-  useEffect(() => {
-    listeners.add(setS);
-    return () => void listeners.delete(setS);
-  }, []);
-  return s;
-}
-
-/** Защищены ли данные от автоматической очистки браузером. */
-export async function isStoragePersisted(): Promise<boolean | null> {
-  try {
-    return (await navigator.storage?.persisted?.()) ?? null;
-  } catch {
-    return null;
-  }
 }
