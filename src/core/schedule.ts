@@ -38,6 +38,36 @@ export interface MainSchedule {
   week: Week;
 }
 
+/**
+ * Предмет, который пользователь добавил сам (например «Практика» или «Классный час»).
+ * Хранится на устройстве; в остальном — как предмет из data/schedule.json.
+ */
+export interface UserSubject extends Subject {
+  /** Цвет и иконка задаются сразу, автоподбор для своих предметов не нужен. */
+  color: string;
+  icon: string;
+  createdAt: string;
+  updatedAt: string;
+  deleted?: boolean;
+}
+
+/** Шаблон «Практика»: каждый выбранный день недели — одно и то же занятие. */
+export interface PracticeSpec {
+  subjectId: string;
+  start: TimeStr;
+  end: TimeStr;
+  room?: string;
+  note?: string;
+  /** Дни недели с занятием (обычно пн–пт). */
+  days: WeekdayKey[];
+}
+
+/**
+ * Как создано временное расписание — чтобы открыть его в том же редакторе:
+ * custom — своя неделя (копия основной с правками), practice — шаблон «Практика», break — каникулы (пар нет).
+ */
+export type PeriodKind = 'custom' | 'practice' | 'break';
+
 /** Временное расписание: своя неделя, которая с from по to заменяет основную. */
 export interface SchedulePeriod {
   id: string;
@@ -45,6 +75,10 @@ export interface SchedulePeriod {
   from: DateStr;
   to: DateStr;
   week: Week;
+  /** По умолчанию custom. */
+  kind?: PeriodKind;
+  /** Для kind = practice: параметры шаблона (неделя week уже собрана из них). */
+  practice?: PracticeSpec;
   createdAt: string;
   updatedAt: string;
   deleted?: boolean;
