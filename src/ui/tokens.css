@@ -34,6 +34,9 @@
   --ls-small: -0.003em;
   --fs-caption: 12px;
   --lh-caption: 16px;
+  /* Цифры таймера в главном блоке «Сегодня» */
+  --fs-timer: 30px;
+  --lh-timer: 36px;
 
   /* Отступы */
   --space-1: 4px;
@@ -52,6 +55,9 @@
   --r-card: 22px;
   --r-sheet: 28px;
   --r-pill: 999px;
+  /* Сегментированный переключатель: дорожка и бегунок */
+  --r-segment: 10px;
+  --r-segment-thumb: 8px;
   /* Скругление иконки-«squircle» = 22.5% её размера */
   --r-icon: 22.5%;
 
@@ -83,6 +89,8 @@
   --shadow-thumb: 0 2px 6px rgb(0 0 0 / 10%), 0 0 0 0.5px rgb(0 0 0 / 4%);
   --shadow-knob: 0 3px 8px rgb(0 0 0 / 15%), 0 1px 1px rgb(0 0 0 / 16%);
   --icon-edge: inset 0 0 0 0.5px rgb(0 0 0 / 6%);
+  /* Едва заметная тень белого знака: помогает на светлых плитках (жёлтая, мятная) */
+  --glyph-shadow: drop-shadow(0 0.5px 1px rgb(0 0 0 / 22%));
 
   /* Стекло (iOS 26): размытие и насыщенность под полупрозрачным фоном */
   --glass-blur: blur(24px) saturate(180%);
@@ -101,6 +109,12 @@
   --sc-gray: #8e8e93;
   --sc-red: #ff3b30;
   --sc-pink: #ff2d55;
+
+  /*
+   * Фон плитки-иконки для самых светлых цветов: чуть глубже, чтобы белый знак читался.
+   * Кольца, точки и полоски берут обычный --sc-*. Для остальных цветов плитка = --sc-*.
+   */
+  --sc-yellow-tile: #e8b500;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -137,6 +151,11 @@
   --warning-fill: #c93400;
   --info-fill: #0062cc;
   --ring-track: rgb(120 120 128 / 16%);
+  --segment-thumb: var(--surface);
+  --aside-bg: var(--surface-2);
+  --sheet-bg: var(--bg);
+  /* Рамка карточек: в светлой и тёмной её нет (0), в AMOLED — тонкая линия */
+  --border-w: 0px;
   --overlay: rgb(0 0 0 / 28%);
   --glass-bg: rgb(255 255 255 / 66%);
   --glass-bg-solid: #f9f9fb;
@@ -171,7 +190,12 @@
   --warning: #ffb340;
   --warning-fill: #c93400;
   --info-fill: #0062cc;
-  --ring-track: rgb(120 120 128 / 28%);
+  --ring-track: rgb(120 120 128 / 34%);
+  --segment-thumb: #5a5a60;
+  /* Колонка «Ближайшее»: чуть светлее фона, но темнее карточек внутри неё */
+  --aside-bg: #18181b;
+  --sheet-bg: var(--bg);
+  --border-w: 0px;
   --overlay: rgb(0 0 0 / 50%);
   --glass-bg: rgb(36 36 40 / 62%);
   --glass-bg-solid: #26262b;
@@ -195,6 +219,11 @@
   --sc-gray: #8e8e93;
   --sc-red: #ff453a;
   --sc-pink: #ff375f;
+
+  --sc-yellow-tile: #d9ae00;
+  --sc-mint-tile: #38c3c0;
+  --sc-cyan-tile: #4bbbe7;
+  --sc-teal-tile: #35c0d8;
 }
 
 /* ---------- AMOLED (чисто чёрный, тонкие границы) ---------- */
@@ -220,7 +249,11 @@
   --warning: #ffb340;
   --warning-fill: #c93400;
   --info-fill: #0062cc;
-  --ring-track: rgb(120 120 128 / 26%);
+  --ring-track: rgb(120 120 128 / 36%);
+  --segment-thumb: #3a3a40;
+  --aside-bg: var(--bg);
+  --sheet-bg: var(--surface);
+  --border-w: 1px;
   --overlay: rgb(0 0 0 / 62%);
   --glass-bg: rgb(18 18 20 / 66%);
   --glass-bg-solid: #121214;
@@ -244,4 +277,9 @@
   --sc-gray: #8e8e93;
   --sc-red: #ff453a;
   --sc-pink: #ff375f;
+
+  --sc-yellow-tile: #d9ae00;
+  --sc-mint-tile: #38c3c0;
+  --sc-cyan-tile: #4bbbe7;
+  --sc-teal-tile: #35c0d8;
 }

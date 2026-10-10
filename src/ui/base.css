@@ -124,6 +124,11 @@ p {
   font-feature-settings: 'tnum' 1;
 }
 
+/* Не переносить внутри: «через 37 мин», «каб. 21», «идёт сейчас» */
+.nowrap {
+  white-space: nowrap;
+}
+
 /* ---------- Стекло (только для панелей навигации) ---------- */
 .glass {
   background: var(--glass-bg);
