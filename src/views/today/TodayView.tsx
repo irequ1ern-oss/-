@@ -80,11 +80,13 @@ function useWakeAt(seconds: number | undefined, date: string) {
 function DayProgressBar({ progress, lessons, kind }: { progress: DayProgress; lessons: ResolvedLesson[]; kind: string }) {
   const first = lessons[0];
   const last = lessons[lessons.length - 1];
+  // В перемену — сколько пар позади: «Перемена» уже в главном блоке, а короткая подпись
+  // и на 360 px помещается в одну строку с «до конца учёбы 1 ч 22 мин».
   const left =
     kind === 'lesson'
       ? `Пара ${progress.index} из ${progress.total}`
       : kind === 'break'
-        ? `Скоро пара ${progress.index} из ${progress.total}` // «Перемена» уже в главном блоке; коротко — в одну строку с правой частью
+        ? `Позади ${progress.index - 1} из ${progress.total}`
         : `Сегодня ${lessonsCount(progress.total)}`;
   const right =
     kind === 'before' ? `${first.start}–${last.end}` : `до конца учёбы ${formatDuration(Math.ceil(progress.remainingSeconds / 60))}`;

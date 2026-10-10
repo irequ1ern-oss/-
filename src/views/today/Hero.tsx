@@ -14,11 +14,11 @@ import { ProgressRing } from '../../ui/ProgressRing';
 import { SubjectIcon } from '../../ui/SubjectIcon';
 import type { IconName } from '../../ui/iconData';
 
-/** «Иди в каб. 21» / «Иди в спортзал». Строка может перенестись только перед кабинетом. */
+/** «Иди в каб. 21» / «Иди в спортзал». Строка может перенестись только перед кабинетом (остальное — неразрывные пробелы). */
 export function goToRoomText(room: string | undefined): string {
   if (!room) return 'Кабинет не указан';
   const label = formatRoom(room);
-  return label.startsWith('каб.') ? `Иди в ${label}` : `Иди в ${label.toLowerCase()}`;
+  return label.startsWith('каб.') ? `Иди\u00a0в ${label}` : `Иди\u00a0в ${label.toLowerCase()}`;
 }
 
 function useRoom(lesson: ResolvedLesson): string | undefined {

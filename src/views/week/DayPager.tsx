@@ -2,10 +2,12 @@
 // Содержимое едет за пальцем; отпустили дальше четверти ширины или «бросили» — день уезжает
 // и въезжает соседний, иначе лента пружинит назад. Вертикальная прокрутка не мешает: ось
 // определяется после первых 10 px, а touch-action: pan-y отдаёт вертикаль браузеру.
+// Долгое нажатие на пару открыло контекстное меню — жест больше не листает дни, лента пружинит назад.
 
 import type { ComponentChildren } from 'preact';
 import { useLayoutEffect, useMemo, useRef } from 'preact/hooks';
 import type { DateStr } from '../../core/time';
+import { useOverlayState } from '../../ui/overlays';
 import { swipeOutcome } from './weekLogic';
 
 /** Переход к дню, который сейчас анимируется. */
@@ -162,6 +164,16 @@ export function DayPager(props: Props) {
       }
     };
 
+    /** Жест перехватило контекстное меню (долгое нажатие сработало): дальше палец двигает не ленту. */
+    const drop = () => {
+      const s = gesture.current;
+      if (!s) return;
+      detach();
+      if (s.axis !== 'x') return;
+      if (reducedMotion()) reset();
+      else springBack();
+    };
+
     const onDown = (e: PointerEvent) => {
       if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
       suppressClick.current = false;
@@ -191,7 +203,7 @@ export function DayPager(props: Props) {
       e.stopPropagation();
     };
 
-    return { setX, reset, settle, detach, onDown, onTransitionEnd, onClickCapture };
+    return { setX, reset, settle, detach, drop, onDown, onTransitionEnd, onClickCapture };
   }, []);
 
   // Начался переход (свайп или нажатие на день) — лента доезжает до соседнего дня.
@@ -234,6 +246,19 @@ export function DayPager(props: Props) {
         {panel(selected, 'current')}
         {panel(next, 'next')}
       </div>
+      <MenuWatch onOpen={g.drop} />
     </div>
   );
+}
+
+/**
+ * Следит за контекстным меню отдельным компонентом: при смене слоёв (шторки, уведомления)
+ * перерисовывается только он, а не три дня ленты.
+ */
+function MenuWatch({ onOpen }: { onOpen: () => void }) {
+  const { menu } = useOverlayState();
+  useLayoutEffect(() => {
+    if (menu) onOpen();
+  }, [menu]);
+  return null;
 }
