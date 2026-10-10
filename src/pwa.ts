@@ -12,6 +12,14 @@ export function setupPwa() {
   // Если страницей уже управляет service worker, то смена управляющего — это вышла новая версия.
   // После первой установки флаг тоже становится true: следующая смена — уже обновление.
   let controlled = Boolean(navigator.serviceWorker.controller);
+  // После жёсткой перезагрузки (Ctrl+Shift+R) страницей никто не управляет, хотя приложение уже установлено:
+  // тогда следующая смена управляющего — тоже обновление.
+  navigator.serviceWorker
+    .getRegistration()
+    .then((r) => {
+      if (r?.active) controlled = true;
+    })
+    .catch(() => undefined);
 
   registerSW({
     immediate: true,
