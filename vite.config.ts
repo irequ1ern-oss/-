@@ -38,6 +38,8 @@ function appAssets(): Set<string> | null {
   const path = resolve(outDir, '.vite/manifest.json');
   if (!existsSync(path)) return null;
   const manifest = JSON.parse(readFileSync(path, 'utf8')) as Record<string, ManifestChunk>;
+  // Без этого кеш молча остался бы без скриптов, и приложение не открылось бы без сети — лучше сломать сборку.
+  if (!manifest['index.html']) throw new Error('ucheba: в .vite/manifest.json нет index.html — офлайн-кеш собрать нельзя');
   const files = new Set<string>();
   const seen = new Set<string>();
   const visit = (key: string) => {
@@ -114,7 +116,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
         // Превью дизайна всегда грузится из сети и не попадает в офлайн-кеш приложения.
         globIgnores: ['preview/**'],
-        navigateFallbackDenylist: [/\/preview\//],
+        // И /preview/…, и /preview без косой черты (иначе service worker откроет вместо превью приложение).
+        navigateFallbackDenylist: [/\/preview(?:[/?]|$)/],
         manifestTransforms: [
           async (entries) => {
             const keep = appAssets();

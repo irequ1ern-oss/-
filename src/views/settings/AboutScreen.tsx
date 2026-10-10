@@ -106,7 +106,7 @@ export function AboutScreen({ back }: { back?: BackInfo }) {
         </Group>
 
         {demo && <p class="settings-note t-footnote">Это превью дизайна: настройки здесь хранятся отдельно от настоящего приложения.</p>}
-        {testTime && <p class="settings-note t-footnote">Включено тестовое время из адреса страницы (?now=…).</p>}
+        {testTime && <p class="settings-note t-footnote">Включено тестовое время из адреса страницы <span class="nowrap">(?now=…)</span>.</p>}
       </div>
     </Screen>
   );

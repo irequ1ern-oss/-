@@ -23,5 +23,5 @@ setupPwa();
 
 if (mainScheduleErrors.length) {
   console.error('Ошибки в data/schedule.json:', mainScheduleErrors);
-  showToast({ text: 'В файле расписания ошибка — часть пар может не показываться', icon: 'info', duration: 10_000 });
+  showToast({ text: `Ошибка в расписании: ${mainScheduleErrors[0]}`, icon: 'info', duration: 10_000 });
 }

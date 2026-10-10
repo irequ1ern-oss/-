@@ -137,3 +137,24 @@
   max-width: var(--content-max);
   margin: 0 auto;
 }
+
+/*
+ * Экран-заглушка: единственное содержимое — EmptyState plain. Без карточки и по центру
+ * свободного места между большим заголовком и панелью вкладок (как ContentUnavailableView в iOS).
+ */
+.screen--centered {
+  display: flex;
+  flex-direction: column;
+}
+
+.screen--centered > .screen__head,
+.screen--centered > .screen__body {
+  width: 100%;
+}
+
+.screen--centered > .screen__body {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

@@ -4,6 +4,9 @@ name: Публикация
 on:
   push:
     branches: [main]
+    # Правки только README и документации сайт не меняют: не публикуем,
+    # иначе установленное приложение зря предложит «Обновить».
+    paths-ignore: ['**/*.md', 'docs/**']
   workflow_dispatch:
 
 permissions:

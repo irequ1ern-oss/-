@@ -17,6 +17,10 @@
           var t = s.theme || 'auto';
           if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
           document.documentElement.setAttribute('data-theme', t);
+          // Цвет строки состояния = --bg темы (tokens.css; совпадение проверяет тест tokens.test.ts).
+          var bg = { light: '#f2f2f7', dark: '#121214', amoled: '#000000' }[t];
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m && bg) m.content = bg;
         } catch (e) {}
       })();
     </script>

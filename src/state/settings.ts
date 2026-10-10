@@ -75,19 +75,47 @@ export function parseSettings(raw: unknown): Settings {
 
 let storageKey = 'ucheba.settings';
 let current: Settings = DEFAULT_SETTINGS;
+let watchingStorage = false;
 const listeners = new Set<(s: Settings) => void>();
 
-/** Превью дизайна хранит настройки отдельно, чтобы не трогать настройки приложения. */
+/** Сохранённые настройки (или null, если их нет или хранилище недоступно). */
+function readStored(): unknown {
+  try {
+    return JSON.parse(localStorage.getItem(storageKey) ?? 'null');
+  } catch {
+    return null;
+  }
+}
+
+function save() {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(current));
+  } catch {
+    // Хранилище недоступно (приватный режим) — настройки живут до перезагрузки.
+  }
+}
+
+/**
+ * Превью дизайна хранит настройки отдельно, чтобы не трогать настройки приложения.
+ * overrides (например, ?theme= в адресе превью) сразу сохраняются, как будто их выбрали в настройках.
+ */
 export function initSettings(key = storageKey, overrides: Partial<Settings> = {}): Settings {
   storageKey = key;
-  let stored: unknown = null;
-  try {
-    stored = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
-  } catch {
-    stored = null;
-  }
-  current = { ...parseSettings(stored), ...overrides };
+  current = { ...parseSettings(readStored()), ...overrides };
+  if (Object.keys(overrides).length) save();
   applyTheme(current.theme);
+  if (!watchingStorage && typeof window !== 'undefined') {
+    watchingStorage = true;
+    // Приложение открыто в двух окнах (например, на ПК — окно приложения и вкладка браузера):
+    // изменения из другого окна сразу видны и здесь.
+    window.addEventListener('storage', (e) => {
+      if (e.key !== storageKey) return;
+      const prevTheme = current.theme;
+      current = parseSettings(readStored());
+      if (current.theme !== prevTheme) applyTheme(current.theme);
+      listeners.forEach((l) => l(current));
+    });
+  }
   return current;
 }
 
@@ -96,13 +124,11 @@ export function getSettings(): Settings {
 }
 
 export function updateSettings(patch: Partial<Settings> | ((s: Settings) => Partial<Settings>)) {
+  // Сначала перечитываем сохранённое: другое окно могло его поменять, и мы не должны затереть чужие правки.
+  current = parseSettings(readStored() ?? current);
   const p = typeof patch === 'function' ? patch(current) : patch;
   current = { ...current, ...p };
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(current));
-  } catch {
-    // Хранилище недоступно (приватный режим) — настройки живут до перезагрузки.
-  }
+  save();
   if ('theme' in p) applyTheme(current.theme);
   listeners.forEach((l) => l(current));
 }
