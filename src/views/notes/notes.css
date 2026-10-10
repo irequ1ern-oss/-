@@ -1,0 +1,20 @@
+/*
+ * Пока заметок нет, заглушка — единственное содержимое экрана: без карточки и по центру
+ * свободного места между большим заголовком и панелью вкладок (как ContentUnavailableView в iOS).
+ */
+.notes-screen {
+  display: flex;
+  flex-direction: column;
+}
+
+.notes-screen > .screen__head,
+.notes-screen > .screen__body {
+  width: 100%;
+}
+
+.notes-screen > .screen__body {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

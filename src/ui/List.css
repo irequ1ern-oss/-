@@ -16,7 +16,7 @@
 .group__body {
   background: var(--surface);
   border-radius: var(--r-group);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   box-shadow: var(--shadow-card);
   overflow: hidden;
 }
@@ -41,6 +41,11 @@
 
 .cell--interactive .cell__row:active {
   background: var(--surface-2);
+}
+
+/* В строке с полем ввода нажатие на подпись тоже ставит курсор в поле */
+.cell__row:has(.text-field) {
+  cursor: text;
 }
 
 .cell__icon {
@@ -107,13 +112,28 @@
   cursor: default;
 }
 
-.cell--disabled .cell__title,
+/* Неактивная строка: приглушён весь текст, иерархия сохраняется (подпись бледнее заголовка).
+   Значение справа (например, «этап 3») остаётся ярким — оно объясняет, почему строка неактивна. */
+.cell.cell--disabled .cell__title {
+  color: var(--label-2);
+}
+
+.cell.cell--disabled .cell__subtitle {
+  color: var(--label-3);
+}
+
 .cell--disabled .cell__icon {
   opacity: 0.45;
 }
 
-.cell--dimmed .cell__row {
-  opacity: 0.5;
+/* Прошедшая пара: приглушаем цветом, а не прозрачностью строки — текст остаётся читаемым (AA),
+   разделители не бледнеют. Бледнее только иконка. */
+.cell--dimmed .cell__title {
+  color: var(--label-2);
+}
+
+.cell--dimmed .cell__icon {
+  opacity: 0.55;
 }
 
 .cell--highlight {
@@ -131,8 +151,12 @@
   width: var(--icon-sm);
   height: var(--icon-sm);
   border-radius: var(--r-icon);
-  background: var(--c);
+  background: var(--ct, var(--c));
   color: var(--on-subject);
+}
+
+.icon-tile svg {
+  filter: var(--glyph-shadow);
 }
 
 .empty-state {
@@ -143,9 +167,16 @@
   gap: 6px;
   padding: var(--space-8) var(--space-6);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-radius: var(--r-card);
   box-shadow: var(--shadow-card);
+}
+
+/* Без карточки, прямо на фоне экрана (как ContentUnavailableView в iOS) */
+.empty-state--plain {
+  background: none;
+  border: 0;
+  box-shadow: none;
 }
 
 .empty-state__icon {

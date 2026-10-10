@@ -42,6 +42,26 @@ type CellProps = {
   label?: string;
 } & Omit<JSX.HTMLAttributes<HTMLElement>, 'title' | 'icon' | 'onClick' | 'class' | 'style'>;
 
+/** Поле ввода в строке без своего действия (см. TextField). */
+const fieldIn = (row: EventTarget | null) => (row as HTMLElement | null)?.querySelector<HTMLInputElement>('input, textarea') ?? null;
+const isControl = (target: EventTarget | null) => !!(target as Element | null)?.closest?.('input, textarea, select, button, a');
+
+/** Нажатие на подпись строки с полем ставит курсор в поле — как в «Настройках» iOS. */
+function focusField(e: MouseEvent) {
+  const field = fieldIn(e.currentTarget);
+  if (!field || field.disabled || isControl(e.target)) return;
+  if (document.activeElement === field) return;
+  field.focus();
+  const end = field.value.length;
+  field.setSelectionRange?.(end, end);
+}
+
+/** Не даём полю потерять фокус, если нажали на подпись, пока оно уже в фокусе (клавиатура не мигает). */
+function keepFieldFocus(e: MouseEvent) {
+  const field = fieldIn(e.currentTarget);
+  if (field && document.activeElement === field && !isControl(e.target)) e.preventDefault();
+}
+
 export function Cell(props: CellProps) {
   const { icon, title, subtitle, value, accessory, below, onClick, disabled, highlight, dimmed, class: cls, style, label, ...rest } = props;
   const classes = ['cell'];
@@ -74,7 +94,7 @@ export function Cell(props: CellProps) {
           {inner}
         </button>
       ) : (
-        <div class="cell__row" aria-label={label} {...(rest as JSX.HTMLAttributes<HTMLDivElement>)}>
+        <div class="cell__row" aria-label={label} onClick={focusField} onMouseDown={keepFieldFocus} {...(rest as JSX.HTMLAttributes<HTMLDivElement>)}>
           {inner}
         </div>
       )}
@@ -85,17 +105,31 @@ export function Cell(props: CellProps) {
 
 /** Цветная плашка с белым значком для строк настроек (как в «Настройках» iOS). */
 export function IconTile({ name, color }: { name: Parameters<typeof Icon>[0]['name']; color: string }) {
+  // --ct — более глубокий фон плитки для самых светлых цветов (жёлтый, мятный…), если он задан в токенах.
   return (
-    <span class="icon-tile" style={`--c:var(--sc-${color})`} aria-hidden="true">
+    <span class="icon-tile" style={`--c:var(--sc-${color});--ct:var(--sc-${color}-tile, var(--sc-${color}))`} aria-hidden="true">
       <Icon name={name} weight="fill" size={18} />
     </span>
   );
 }
 
+interface EmptyStateProps {
+  icon: Parameters<typeof Icon>[0]['name'];
+  title: string;
+  text?: string;
+  /** Без карточки, прямо на фоне экрана — когда заглушка единственное содержимое (как ContentUnavailableView). */
+  plain?: boolean;
+  class?: string;
+  children?: ComponentChildren;
+}
+
 /** Заглушка «пока пусто» в стиле iOS. */
-export function EmptyState({ icon, title, text, children }: { icon: Parameters<typeof Icon>[0]['name']; title: string; text?: string; children?: ComponentChildren }) {
+export function EmptyState({ icon, title, text, plain, class: cls, children }: EmptyStateProps) {
+  const classes = ['empty-state'];
+  if (plain) classes.push('empty-state--plain');
+  if (cls) classes.push(cls);
   return (
-    <div class="empty-state">
+    <div class={classes.join(' ')}>
       <span class="empty-state__icon">
         <Icon name={icon} size={34} />
       </span>

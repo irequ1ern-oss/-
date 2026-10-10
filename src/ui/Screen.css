@@ -1,4 +1,12 @@
 .screen {
+  /*
+   * Поля по бокам: не меньше --gutter и не под вырезом экрана. Каркас ставит --safe-l / --safe-r в 0,
+   * когда колонка не касается края (слева меню, справа «Ближайшее»).
+   */
+  --pad-l: max(var(--gutter), var(--safe-l, env(safe-area-inset-left)));
+  --pad-r: max(var(--gutter), var(--safe-r, env(safe-area-inset-right)));
+  /* Отступ панели сверху: вырез экрана и, на планшете, отступ плавающих панелей (--navbar-top) */
+  --navbar-pad-top: calc(var(--navbar-top, 0px) + env(safe-area-inset-top));
   position: absolute;
   inset: 0;
   overflow-y: auto;
@@ -6,7 +14,7 @@
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   background: var(--bg);
-  scroll-padding-top: var(--navbar-h);
+  scroll-padding-top: calc(var(--navbar-h) + var(--navbar-pad-top));
 }
 
 .navbar {
@@ -14,11 +22,18 @@
   top: 0;
   z-index: 5;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  /*
+   * Кнопки по бокам — во всю свою ширину. Маленький заголовок по центру, а если тесно —
+   * сдвигается и сокращается он, а не подпись «‹ Назад».
+   */
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, max-content) minmax(max-content, 1fr);
   align-items: center;
   gap: var(--space-2);
-  min-height: calc(var(--navbar-h) + env(safe-area-inset-top));
-  padding: env(safe-area-inset-top) var(--gutter) 0;
+  min-height: calc(var(--navbar-h) + var(--navbar-pad-top));
+  /* Кнопки — по краям колонки содержимого (не шире --content-max), стеклянный фон — во всю ширину */
+  padding-top: var(--navbar-pad-top);
+  padding-left: max(var(--pad-l), calc((100% - var(--content-max)) / 2 + var(--pad-l)));
+  padding-right: max(var(--pad-r), calc((100% - var(--content-max)) / 2 + var(--pad-r)));
   pointer-events: none;
 }
 
@@ -45,7 +60,6 @@
 }
 
 .navbar__title {
-  max-width: 60vw;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -59,6 +73,11 @@
 .navbar.is-collapsed .navbar__title {
   opacity: 1;
   transform: none;
+}
+
+/* Пока виден большой заголовок, маленький не занимает места — подпись «назад» не сокращается */
+.navbar:not(.is-collapsed) .navbar__title {
+  max-width: 0;
 }
 
 .navbar__side {
@@ -84,7 +103,6 @@
   color: var(--accent);
   font-size: var(--fs-body);
   white-space: nowrap;
-  max-width: 40vw;
   overflow: hidden;
 }
 
@@ -99,7 +117,7 @@
 }
 
 .screen__head {
-  padding: 0 var(--gutter) var(--space-4);
+  padding: 0 var(--pad-r) var(--space-4) var(--pad-l);
   max-width: var(--content-max);
   margin: calc(-1 * var(--space-2)) auto 0;
 }
@@ -113,7 +131,7 @@
 }
 
 .screen__body {
-  padding: 0 var(--gutter) var(--screen-bottom, 120px);
+  padding: 0 var(--pad-r) var(--screen-bottom, 120px) var(--pad-l);
   max-width: var(--content-max);
   margin: 0 auto;
 }

@@ -13,26 +13,59 @@ interface SegmentedProps<T extends string | number> {
   label: string;
 }
 
-/** Сегментированный переключатель: выбранный сегмент — белая «таблетка», плавно переезжает. */
+/**
+ * Сегментированный переключатель: выбранный сегмент — светлая «таблетка», плавно переезжает.
+ * С клавиатуры — как группа радиокнопок: Tab попадает только на выбранный сегмент, стрелки и Home/End выбирают.
+ */
 export function Segmented<T extends string | number>({ options, value, onChange, label }: SegmentedProps<T>) {
   const index = Math.max(0, options.findIndex((o) => o.value === value));
+  const pick = (o: { value: T }) => {
+    if (o.value !== value) {
+      haptic();
+      onChange(o.value);
+    }
+  };
+  const onKeyDown = (e: KeyboardEvent) => {
+    const items = Array.from((e.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>('[role="radio"]'));
+    const last = items.length - 1;
+    const from = items.indexOf(e.target as HTMLButtonElement);
+    const at = from < 0 ? index : from;
+    let next: number;
+    switch (e.key) {
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next = at > 0 ? at - 1 : last;
+        break;
+      case 'ArrowRight':
+      case 'ArrowDown':
+        next = at < last ? at + 1 : 0;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = last;
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+    items[next]?.focus();
+    if (options[next]) pick(options[next]);
+  };
   return (
-    <div class="segmented" role="radiogroup" aria-label={label} style={`--n:${options.length};--i:${index}`}>
+    <div class="segmented" role="radiogroup" aria-label={label} style={`--n:${options.length};--i:${index}`} onKeyDown={onKeyDown}>
       <span class="segmented__thumb" aria-hidden="true" />
-      {options.map((o) => (
+      {options.map((o, i) => (
         <button
           key={String(o.value)}
           role="radio"
           aria-checked={o.value === value}
+          tabIndex={i === index ? 0 : -1}
           class={`segmented__item${o.value === value ? ' is-active' : ''}`}
-          onClick={() => {
-            if (o.value !== value) {
-              haptic();
-              onChange(o.value);
-            }
-          }}
+          onClick={() => pick(o)}
         >
-          {o.label}
+          <span class="segmented__label">{o.label}</span>
         </button>
       ))}
     </div>

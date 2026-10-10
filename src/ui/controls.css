@@ -4,7 +4,7 @@
   display: grid;
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
   padding: 2px;
-  border-radius: 10px;
+  border-radius: var(--r-segment);
   background: var(--surface-2);
   isolation: isolate;
 }
@@ -16,26 +16,34 @@
   bottom: 2px;
   left: 2px;
   width: calc((100% - 4px) / var(--n));
-  border-radius: 8px;
-  background: var(--surface);
+  border-radius: var(--r-segment-thumb);
+  background: var(--segment-thumb);
   box-shadow: var(--shadow-thumb);
   transform: translateX(calc(100% * var(--i)));
   transition: transform var(--dur-2) var(--ease-ios);
 }
 
-[data-theme='dark'] .segmented__thumb,
-[data-theme='amoled'] .segmented__thumb {
-  background: var(--surface-3);
-}
-
 .segmented__item {
+  position: relative;
+  min-width: 0;
   min-height: 36px;
   padding: 4px 2px;
-  border-radius: 8px;
+  border-radius: var(--r-segment-thumb);
   text-align: center;
   font-size: var(--fs-subhead);
   font-weight: 500;
   color: var(--label);
+}
+
+/* Невидимая зона нажатия: сегмент 36 px, а попасть можно в полосу 44 px */
+.segmented__item::before {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+
+.segmented__label {
+  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -165,10 +173,12 @@
 }
 
 /* ---------- Поле ввода ---------- */
+/* Поле высотой с зону нажатия (44 px), но строку не раздувает: в ней по-прежнему 32 px */
 .text-field {
   width: 100%;
   min-width: 0;
-  min-height: 32px;
+  min-height: var(--tap-min);
+  margin: -6px 0;
   padding: 0;
   border: 0;
   background: transparent;

@@ -2,7 +2,7 @@
 // (кнопкой или свайпом от левого края). Нижние экраны остаются живыми — сохраняется прокрутка.
 
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { routeChain, routeKey, type Route } from './nav';
 
 export interface BackInfo {
@@ -19,7 +19,8 @@ interface Props {
   onBack: (parent: Route) => void;
 }
 
-type Anim = { kind: 'push' } | { kind: 'pop'; exiting: Route } | null;
+/** При «назад» уходящий экран ещё виден — помним цепочку, в которой он был, чтобы дать ему его же кнопку «‹». */
+type Anim = { kind: 'push' } | { kind: 'pop'; exiting: Route; chain: Route[] } | null;
 
 const DURATION = 460;
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -41,7 +42,7 @@ export function Stack({ route, settingsOverToday, render, titleOf, onBack }: Pro
     const isPop = after.length < before.length && after.every((k, i) => before[i] === k);
     if (skipNext.current || reducedMotion()) anim.current = null;
     else if (isPush) anim.current = { kind: 'push' };
-    else if (isPop) anim.current = { kind: 'pop', exiting: prev.current.chain[prev.current.chain.length - 1] };
+    else if (isPop) anim.current = { kind: 'pop', exiting: prev.current.chain[prev.current.chain.length - 1], chain: prev.current.chain };
     else anim.current = null;
     skipNext.current = false;
     prev.current = { keys, chain };
@@ -56,14 +57,26 @@ export function Stack({ route, settingsOverToday, render, titleOf, onBack }: Pro
     return () => window.clearTimeout(t);
   }, [keys]);
 
-  const backFor = (i: number): BackInfo | undefined => {
+  const backFor = (layers: Route[], i: number): BackInfo | undefined => {
     if (i === 0) return undefined;
-    const parent = chain[i - 1];
+    const parent = layers[i - 1];
     return { label: titleOf(parent), onBack: () => onBack(parent) };
   };
 
   // ---------- Свайп от левого края ----------
   const drag = useRef<{ x0: number; t0: number; dx: number } | null>(null);
+  // После свайпа слои стоят там, куда их дотянули, пока не сменится экран: history.back() срабатывает
+  // не сразу, и без этого верхний экран на кадр вернулся бы на место.
+  const swiped = useRef<HTMLElement[]>([]);
+  const clearSwipe = () => {
+    for (const el of swiped.current) {
+      el.style.transition = '';
+      el.style.transform = '';
+      el.style.visibility = '';
+    }
+    swiped.current = [];
+  };
+  useLayoutEffect(clearSwipe, [keys]);
   const layersEls = () => {
     const els = container.current?.querySelectorAll<HTMLElement>(':scope > .stack__layer:not(.is-exiting)');
     return els ? [els[els.length - 2], els[els.length - 1]] : [undefined, undefined];
@@ -106,39 +119,39 @@ export function Stack({ route, settingsOverToday, render, titleOf, onBack }: Pro
       below.style.transform = commit ? 'translateX(0)' : '';
     }
     window.setTimeout(() => {
-      for (const el of [top, below]) {
-        if (!el) continue;
-        el.style.transition = '';
-        el.style.transform = '';
-        el.style.visibility = '';
-      }
-      if (commit) {
-        skipNext.current = true;
-        onBack(chain[chain.length - 2]);
-      }
+      swiped.current = [top, below].filter((el): el is HTMLElement => !!el);
+      if (!commit) return clearSwipe();
+      skipNext.current = true;
+      onBack(chain[chain.length - 2]);
+      // Если экран так и не сменился — вернуть слои на место, а не оставить пустоту.
+      window.setTimeout(() => {
+        if (!swiped.current.length) return;
+        skipNext.current = false;
+        clearSwipe();
+      }, 1000);
     }, 300);
   };
 
   const a = anim.current;
+  // Все слои — одним списком с ключами: уходящий экран остаётся тем же (прокрутка, кнопка «‹»), а не создаётся заново.
+  const layers = chain.map((r, i) => ({ route: r, back: backFor(chain, i), exiting: false }));
+  if (a?.kind === 'pop') layers.push({ route: a.exiting, back: backFor(a.chain, a.chain.length - 1), exiting: true });
   return (
     <div class="stack" ref={container}>
-      {chain.map((r, i) => {
+      {layers.map(({ route: r, back, exiting }, i) => {
         const isTop = i === chain.length - 1;
-        const classes = ['stack__layer', isTop ? 'is-top' : 'is-below'];
+        const classes = ['stack__layer'];
+        if (exiting) classes.push('is-exiting', 'anim-pop-out');
+        else classes.push(isTop ? 'is-top' : 'is-below');
         if (a?.kind === 'push' && isTop) classes.push('anim-push-in');
         if (a?.kind === 'push' && i === chain.length - 2) classes.push('anim-push-cover');
         if (a?.kind === 'pop' && isTop) classes.push('anim-pop-reveal');
         return (
           <div key={routeKey(r)} class={classes.join(' ')} aria-hidden={isTop ? undefined : 'true'}>
-            {render(r, backFor(i))}
+            {render(r, back)}
           </div>
         );
       })}
-      {a?.kind === 'pop' && (
-        <div key={routeKey(a.exiting)} class="stack__layer is-exiting anim-pop-out" aria-hidden="true">
-          {render(a.exiting, undefined)}
-        </div>
-      )}
       {chain.length > 1 && (
         <div
           class="stack__edge"

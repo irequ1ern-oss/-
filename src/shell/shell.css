@@ -1,5 +1,7 @@
 /* ---------- Каркас ---------- */
 .shell {
+  /* Отступ плавающих панелей (меню, «Ближайшее») от краёв экрана и друг от друга */
+  --panel-inset: 10px;
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -22,22 +24,28 @@
 .shell--wide {
   --screen-bottom: var(--space-8);
   --toast-bottom: var(--space-6);
-  --side: calc(var(--sidebar-w) + 20px);
+  /* Верхняя панель экрана — на одной высоте с плавающими панелями */
+  --navbar-top: var(--panel-inset);
+  --side: calc(var(--sidebar-w) + 2 * var(--panel-inset) + env(safe-area-inset-left));
 }
 
 .shell--tablet.is-collapsed,
 .shell--wide.is-collapsed {
-  --side: calc(var(--sidebar-w-collapsed) + 20px);
+  --side: calc(var(--sidebar-w-collapsed) + 2 * var(--panel-inset) + env(safe-area-inset-left));
 }
 
+/* Ширина колонки меняется сразу (без анимации раскладки); плавный сдвиг делает AppShell через transform */
 .shell--tablet .shell__main,
 .shell--wide .shell__main {
   left: var(--side);
-  transition: left var(--dur-3) var(--ease-ios);
+  /* Слева меню: вырез экрана уже учтён в --side */
+  --safe-l: 0px;
 }
 
+/* Справа «Ближайшее»: такой же зазор, как с меню */
 .shell--wide .shell__main {
-  right: calc(var(--aside-w) + 12px);
+  right: calc(var(--aside-w) + 2 * var(--panel-inset) + env(safe-area-inset-right));
+  --safe-r: 0px;
 }
 
 /* ---------- Стек экранов ---------- */
@@ -82,7 +90,7 @@
 .stack__edge {
   position: absolute;
   z-index: 4;
-  top: calc(var(--navbar-h) + env(safe-area-inset-top));
+  top: calc(var(--navbar-h) + var(--navbar-top, 0px) + env(safe-area-inset-top));
   bottom: 0;
   left: 0;
   width: 16px;
@@ -130,7 +138,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 0 var(--gutter);
+  padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
   pointer-events: none;
 }
 
@@ -196,8 +204,8 @@
 }
 
 .tabbar__label {
-  font-size: 11px;
-  line-height: 13px;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-caption);
   font-weight: 600;
   letter-spacing: 0;
 }
@@ -220,20 +228,68 @@
 .sidebar {
   position: absolute;
   z-index: 10;
-  top: calc(10px + env(safe-area-inset-top));
-  bottom: calc(10px + env(safe-area-inset-bottom));
-  left: 10px;
+  top: calc(var(--panel-inset) + env(safe-area-inset-top));
+  bottom: calc(var(--panel-inset) + env(safe-area-inset-bottom));
+  left: calc(var(--panel-inset) + env(safe-area-inset-left));
   width: var(--sidebar-w);
   display: flex;
   flex-direction: column;
   padding: var(--space-3) var(--space-2);
   border-radius: var(--r-card);
-  transition: width var(--dur-3) var(--ease-ios);
-  overflow: hidden;
 }
 
+/* Ширина меняется сразу — без пересчёта раскладки на каждом кадре */
 .is-collapsed .sidebar {
   width: var(--sidebar-w-collapsed);
+}
+
+/*
+ * Стеклянный фон — два слоя: широкая панель и узкая полоса. При сворачивании широкая уезжает
+ * влево под край экрана и гаснет, полоса проявляется; при разворачивании — наоборот.
+ * Двигаются только transform и opacity.
+ */
+.sidebar__bg {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transition:
+    transform var(--dur-3) var(--ease-ios),
+    opacity var(--dur-2) var(--ease-ios);
+}
+
+.sidebar__bg--wide {
+  width: var(--sidebar-w);
+}
+
+.sidebar__bg--rail {
+  width: var(--sidebar-w-collapsed);
+  opacity: 0;
+}
+
+.is-collapsed .sidebar__bg--wide {
+  opacity: 0;
+  transform: translateX(calc(var(--sidebar-w-collapsed) - var(--sidebar-w)));
+}
+
+.is-collapsed .sidebar__bg--rail {
+  opacity: 1;
+}
+
+/* Подписи проявляются после разворачивания (на первом показе — без анимации) */
+.sidebar.is-animated .sidebar__title,
+.sidebar.is-animated .sidebar__item > :not(.sidebar__icon) {
+  animation: sidebar-label-in var(--dur-2) var(--ease-ios) both;
+}
+
+@keyframes sidebar-label-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
 }
 
 .sidebar__head {
@@ -315,15 +371,16 @@
 /* ---------- Колонка «Ближайшее» ---------- */
 .shell__aside {
   position: absolute;
-  top: calc(10px + env(safe-area-inset-top));
-  bottom: calc(10px + env(safe-area-inset-bottom));
-  right: 10px;
+  top: calc(var(--panel-inset) + env(safe-area-inset-top));
+  bottom: calc(var(--panel-inset) + env(safe-area-inset-bottom));
+  right: calc(var(--panel-inset) + env(safe-area-inset-right));
   width: var(--aside-w);
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: var(--r-card);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  /* Темнее карточек внутри — как сгруппированный список iOS */
+  background: var(--aside-bg);
+  border: var(--border-w) solid var(--border);
 }
 
 .aside-panel {
@@ -334,11 +391,11 @@
   padding: var(--space-5) var(--space-4);
 }
 
-.aside-panel__close {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
-  z-index: 1;
+/* «‹ Ближайшее» над карточкой предмета (вид — как у кнопки «назад» в верхней панели) */
+.aside-panel__back {
+  align-self: flex-start;
+  margin-top: calc(-1 * var(--space-3));
+  margin-bottom: calc(-1 * var(--space-2));
 }
 
 .shell__aside .group__body,

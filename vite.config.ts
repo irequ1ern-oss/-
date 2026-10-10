@@ -1,6 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import preact from '@preact/preset-vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -12,9 +13,64 @@ const base = process.env.BASE_PATH || '/';
 
 const page = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
+// Папка сборки (её узнаём у Vite: её можно поменять флагом --outDir).
+let outDir = page('./dist');
+const rememberOutDir: Plugin = {
+  name: 'ucheba:out-dir',
+  configResolved(config) {
+    outDir = resolve(config.root, config.build.outDir);
+  },
+};
+
+interface ManifestChunk {
+  file: string;
+  css?: string[];
+  assets?: string[];
+  imports?: string[];
+  dynamicImports?: string[];
+}
+
+/**
+ * Файлы из assets/, которые реально нужны приложению (index.html и всё, что он подгружает).
+ * Скрипты и стили превью дизайна сюда не попадают — в офлайн-кеш приложения их класть незачем.
+ */
+function appAssets(): Set<string> | null {
+  const path = resolve(outDir, '.vite/manifest.json');
+  if (!existsSync(path)) return null;
+  const manifest = JSON.parse(readFileSync(path, 'utf8')) as Record<string, ManifestChunk>;
+  const files = new Set<string>();
+  const seen = new Set<string>();
+  const visit = (key: string) => {
+    const chunk = manifest[key];
+    if (!chunk || seen.has(key)) return;
+    seen.add(key);
+    files.add(chunk.file);
+    chunk.css?.forEach((f) => files.add(f));
+    chunk.assets?.forEach((f) => files.add(f));
+    [...(chunk.imports ?? []), ...(chunk.dynamicImports ?? [])].forEach(visit);
+  };
+  visit('index.html');
+  return files;
+}
+
+// Страницы превью нельзя «установить» как приложение: убираем из них ссылку на манифест.
+const previewWithoutManifest: Plugin = {
+  name: 'ucheba:preview-without-manifest',
+  // После плагина PWA: он сам добавляет ссылку на манифест в каждую страницу.
+  enforce: 'post',
+  transformIndexHtml: {
+    order: 'post',
+    handler(html, ctx) {
+      return ctx.path.includes('/preview/') ? html.replace(/\s*<link rel="manifest"[^>]*>/, '') : html;
+    },
+  },
+};
+
 export default defineConfig({
   base,
   build: {
+    // Карта сборки (.vite/manifest.json): по ней офлайн-кеш берёт только файлы приложения.
+    manifest: true,
     rolldownOptions: {
       // Приложение + страницы превью дизайна (preview/ — не кешируются для офлайна).
       input: {
@@ -29,6 +85,7 @@ export default defineConfig({
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
   plugins: [
+    rememberOutDir,
     preact(),
     VitePWA({
       // Новая версия ставится сама и включается при следующем открытии приложения.
@@ -57,10 +114,18 @@ export default defineConfig({
         // Превью дизайна всегда грузится из сети и не попадает в офлайн-кеш приложения.
         globIgnores: ['preview/**'],
         navigateFallbackDenylist: [/\/preview\//],
+        manifestTransforms: [
+          async (entries) => {
+            const keep = appAssets();
+            if (!keep) return { manifest: entries, warnings: ['ucheba: нет .vite/manifest.json, кешируется всё'] };
+            return { manifest: entries.filter((e) => !e.url.startsWith('assets/') || keep.has(e.url)), warnings: [] };
+          },
+        ],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
       },
     }),
+    previewWithoutManifest,
   ],
 });

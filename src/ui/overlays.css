@@ -22,15 +22,26 @@
   max-height: calc(100dvh - env(safe-area-inset-top) - 24px);
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: var(--sheet-bg);
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   border-bottom: 0;
   box-shadow: var(--shadow-float);
   transform: translateY(100%);
   transition: transform var(--dur-3) var(--ease-ios);
   outline: none;
-  touch-action: pan-y;
+}
+
+/*
+ * AMOLED: шторка цвета --surface (светлее чёрного фона под ней), поэтому карточки
+ * внутри неё — на ступень светлее, а нажатая строка — ещё на одну.
+ */
+[data-theme='amoled'] .sheet {
+  --surface: var(--surface-2);
+}
+
+[data-theme='amoled'] .sheet__body {
+  --surface-2: var(--surface-3);
 }
 
 .sheet-layer.is-open .sheet-backdrop {
@@ -49,6 +60,8 @@
   flex: none;
   padding: 6px var(--space-4) 4px;
   cursor: grab;
+  /* Жест вниз за «ручку» — всегда перетаскивание шторки, браузер его не перехватывает */
+  touch-action: none;
 }
 
 .sheet__grabber {
@@ -123,7 +136,7 @@
     max-width: 560px;
     max-height: min(760px, calc(100dvh - 48px));
     border-radius: var(--r-sheet);
-    border-bottom: 1px solid var(--border);
+    border-bottom: var(--border-w) solid var(--border);
     transform: translateY(40px) scale(0.98);
     opacity: 0;
     transition:
@@ -137,6 +150,21 @@
   .sheet-layer.is-leave .sheet {
     transform: translateY(40px) scale(0.98);
     opacity: 0;
+  }
+  /* Карточка по центру: без «ручки» и без запаса под полоску «домой» телефона */
+  .sheet__top {
+    padding-top: var(--space-3);
+    cursor: auto;
+  }
+  .sheet__grabber {
+    display: none;
+  }
+  .sheet__body {
+    padding-bottom: var(--space-5);
+  }
+  .sheet__body > .group:last-child,
+  .sheet__body > :last-child > .group:last-child {
+    margin-bottom: 0;
   }
 }
 
@@ -191,7 +219,7 @@
   overflow: hidden;
   border-radius: var(--r-group);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: var(--border-w) solid var(--border);
   box-shadow: var(--shadow-float);
   transform-origin: top left;
   transform: scale(0.6);

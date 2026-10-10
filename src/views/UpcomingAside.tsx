@@ -23,11 +23,16 @@ const EVENT_KINDS: Record<EventItem['kind'], string> = {
   deadline: 'срок сдачи',
 };
 
-export function UpcomingAside() {
+interface Props {
+  /** Не показывать группу «ДЗ» (когда рядом открыт экран «ДЗ» с тем же списком). */
+  hideHomework?: boolean;
+}
+
+export function UpcomingAside({ hideHomework = false }: Props) {
   const { events } = useAppData();
   const [items] = useHomework();
   const today = useClock('minute').date;
-  const homework = upcomingHomework(items, today, 7);
+  const homework = hideHomework ? [] : upcomingHomework(items, today, 7);
   const soon = upcomingEvents(events, today, 14);
 
   return (
