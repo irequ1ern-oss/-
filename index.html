@@ -4,12 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Расписание пар, ДЗ и заметки" />
-    <meta name="theme-color" content="#f4f6f9" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f2f2f7" />
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <title>Учёба</title>
+    <script>
+      // Тема до первой отрисовки, чтобы не мигал белый экран. Точная логика — в src/state/settings.ts.
+      (function () {
+        try {
+          var s = JSON.parse(localStorage.getItem('ucheba.settings') || '{}');
+          var t = s.theme || 'auto';
+          if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', t);
+          // Цвет строки состояния = --bg темы (tokens.css; совпадение проверяет тест tokens.test.ts).
+          var bg = { light: '#f2f2f7', dark: '#121214', amoled: '#000000' }[t];
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m && bg) m.content = bg;
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

@@ -81,3 +81,11 @@ describe('тёмные темы отличаются от светлой', () =>
     expect(themeVars('dark').bg).not.toBe('#000000');
   });
 });
+
+describe('index.html', () => {
+  const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+  it.each(['light', 'dark', 'amoled'] as const)('цвет строки состояния до загрузки = --bg темы %s', (theme) => {
+    const m = html.match(new RegExp(`${theme}: '(#[0-9a-f]{6})'`, 'i'));
+    expect(m?.[1].toLowerCase()).toBe(themeVars(theme).bg.toLowerCase());
+  });
+});

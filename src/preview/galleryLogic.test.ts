@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS } from '../state/settings';
 import {
-  PHONE_SIZE, TABLET_LANDSCAPE, TABLET_PORTRAIT, appUrl, externalPatch, fitScale, frameMaxHeight, routeHash, splitColumns,
+  PHONE_SIZE, TABLET_LANDSCAPE, TABLET_PORTRAIT, appUrl, fitScale, frameMaxHeight, routeHash, splitColumns,
 } from './galleryLogic';
 
 describe('fitScale', () => {
@@ -72,28 +71,5 @@ describe('splitColumns', () => {
     expect(splitColumns([1, 2], 1)).toEqual([[1, 2]]);
     expect(splitColumns([], 2)).toEqual([[]]);
     expect(splitColumns([1], 3)).toEqual([[1]]);
-  });
-});
-
-describe('externalPatch', () => {
-  const current = { ...DEFAULT_SETTINGS, theme: 'dark' as const };
-
-  it('подхватывает изменения, кроме темы', () => {
-    const raw = JSON.stringify({ ...current, theme: 'light', subgroup: 2, subjects: { mss: { color: 'mint' } } });
-    expect(externalPatch(current, raw)).toEqual({ subgroup: 2, subjects: { mss: { color: 'mint' } } });
-  });
-
-  it('null, если отличается только тема', () => {
-    expect(externalPatch(current, JSON.stringify({ ...current, theme: 'amoled' }))).toBeNull();
-  });
-
-  it('null для пустой или испорченной записи', () => {
-    expect(externalPatch(current, null)).toBeNull();
-    expect(externalPatch(current, '{не json')).toBeNull();
-  });
-
-  it('испорченные поля заменяются значениями по умолчанию', () => {
-    const changed = { ...current, sidebarCollapsed: true };
-    expect(externalPatch(changed, JSON.stringify({ sidebarCollapsed: 'да' }))).toEqual({ sidebarCollapsed: false });
   });
 });

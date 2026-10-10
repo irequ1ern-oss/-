@@ -75,19 +75,82 @@ export function parseSettings(raw: unknown): Settings {
 
 let storageKey = 'ucheba.settings';
 let current: Settings = DEFAULT_SETTINGS;
+/** Значения из адреса превью (?theme=…): действуют в этом окне, пока их не поменяют в настройках. */
+let pinned: Partial<Settings> = {};
+/** Поля, которые это окно не берёт из других окон (страница превью сама выбирает тему для рамок). */
+let localKeys: (keyof Settings)[] = [];
+/** Сохранённые настройки без значений из адреса — их и записываем вместо pinned. */
+let storedBase: Settings = DEFAULT_SETTINGS;
+/** Последняя запись удалась. Если нет (хранилище переполнено) — живём на том, что в памяти. */
+let writable = true;
+let watchingStorage = false;
 const listeners = new Set<(s: Settings) => void>();
 
-/** Превью дизайна хранит настройки отдельно, чтобы не трогать настройки приложения. */
-export function initSettings(key = storageKey, overrides: Partial<Settings> = {}): Settings {
-  storageKey = key;
-  let stored: unknown = null;
+/** Сохранённые настройки (или null, если их нет или хранилище недоступно). */
+function readStored(): unknown {
   try {
-    stored = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
+    return JSON.parse(localStorage.getItem(storageKey) ?? 'null');
   } catch {
-    stored = null;
+    return null;
   }
-  current = { ...parseSettings(stored), ...overrides };
+}
+
+function save() {
+  // Значения из адреса превью не записываем: другие окна превью их не должны получить.
+  const out: Settings = { ...current };
+  for (const k of Object.keys(pinned) as (keyof Settings)[]) (out as unknown as Record<string, unknown>)[k] = storedBase[k];
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(out));
+    writable = true;
+  } catch {
+    // Хранилище недоступно (приватный режим, нет места) — настройки живут до перезагрузки.
+    writable = false;
+  }
+}
+
+/** Свежие настройки с учётом правок из других окон: их могли поменять, пока это окно было открыто. */
+function fresh(): Settings {
+  const next = parseSettings((writable ? readStored() : null) ?? current);
+  storedBase = next;
+  for (const k of localKeys) (next as unknown as Record<string, unknown>)[k] = current[k];
+  return { ...next, ...pinned };
+}
+
+/** Применить новые настройки: перекрасить, если сменилась тема, и сообщить экранам. */
+function commit(next: Settings, themeChanged: boolean) {
+  current = next;
+  if (themeChanged) applyTheme(current.theme);
+  listeners.forEach((l) => l(current));
+}
+
+interface InitOptions {
+  /** Поля, которые не подхватываются из других окон. */
+  localKeys?: (keyof Settings)[];
+}
+
+/**
+ * Превью дизайна хранит настройки отдельно, чтобы не трогать настройки приложения.
+ * overrides (например, ?theme= в адресе превью) действуют только в этом окне и не сохраняются,
+ * пока их не поменяют в настройках.
+ */
+export function initSettings(key = storageKey, overrides: Partial<Settings> = {}, options: InitOptions = {}): Settings {
+  storageKey = key;
+  pinned = { ...overrides };
+  localKeys = options.localKeys ?? [];
+  writable = true;
+  storedBase = parseSettings(readStored());
+  current = { ...storedBase, ...pinned };
   applyTheme(current.theme);
+  if (!watchingStorage && typeof window !== 'undefined') {
+    watchingStorage = true;
+    // Приложение открыто в двух окнах (например, на ПК — окно приложения и вкладка браузера):
+    // изменения из другого окна сразу видны и здесь.
+    window.addEventListener('storage', (e) => {
+      if (e.key !== storageKey) return;
+      const next = fresh();
+      commit(next, next.theme !== current.theme);
+    });
+  }
   return current;
 }
 
@@ -96,15 +159,15 @@ export function getSettings(): Settings {
 }
 
 export function updateSettings(patch: Partial<Settings> | ((s: Settings) => Partial<Settings>)) {
-  const p = typeof patch === 'function' ? patch(current) : patch;
-  current = { ...current, ...p };
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(current));
-  } catch {
-    // Хранилище недоступно (приватный режим) — настройки живут до перезагрузки.
-  }
-  if ('theme' in p) applyTheme(current.theme);
-  listeners.forEach((l) => l(current));
+  // Сначала перечитываем сохранённое: другое окно могло его поменять, и мы не должны затереть чужие правки.
+  const prevTheme = current.theme;
+  const base = fresh();
+  const p = typeof patch === 'function' ? patch(base) : patch;
+  // Выбранное в настройках важнее значения из адреса превью.
+  for (const k of Object.keys(p) as (keyof Settings)[]) delete pinned[k];
+  current = { ...base, ...p };
+  save();
+  commit(current, 'theme' in p || current.theme !== prevTheme);
 }
 
 export function updateSubjectPrefs(id: string, patch: SubjectPrefs | null) {

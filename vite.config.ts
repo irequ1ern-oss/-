@@ -38,6 +38,8 @@ function appAssets(): Set<string> | null {
   const path = resolve(outDir, '.vite/manifest.json');
   if (!existsSync(path)) return null;
   const manifest = JSON.parse(readFileSync(path, 'utf8')) as Record<string, ManifestChunk>;
+  // Без этого кеш молча остался бы без скриптов, и приложение не открылось бы без сети — лучше сломать сборку.
+  if (!manifest['index.html']) throw new Error('ucheba: в .vite/manifest.json нет index.html — офлайн-кеш собрать нельзя');
   const files = new Set<string>();
   const seen = new Set<string>();
   const visit = (key: string) => {
@@ -88,7 +90,7 @@ export default defineConfig({
     rememberOutDir,
     preact(),
     VitePWA({
-      // Новая версия ставится сама и включается при следующем открытии приложения.
+      // Новая версия скачивается и включается сама (skipWaiting ниже); приложение предлагает перезагрузить экран.
       registerType: 'prompt',
       includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
@@ -101,8 +103,9 @@ export default defineConfig({
         scope: base,
         display: 'standalone',
         orientation: 'any',
-        background_color: '#f4f6f9',
-        theme_color: '#2563eb',
+        // Цвет фона светлой темы (--bg): заставка при запуске и полоса сверху до загрузки приложения.
+        background_color: '#f2f2f7',
+        theme_color: '#f2f2f7',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -113,7 +116,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
         // Превью дизайна всегда грузится из сети и не попадает в офлайн-кеш приложения.
         globIgnores: ['preview/**'],
-        navigateFallbackDenylist: [/\/preview\//],
+        // И /preview/…, и /preview без косой черты (иначе service worker откроет вместо превью приложение).
+        navigateFallbackDenylist: [/\/preview(?:[/?]|$)/],
         manifestTransforms: [
           async (entries) => {
             const keep = appAssets();

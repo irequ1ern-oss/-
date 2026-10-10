@@ -1,6 +1,6 @@
 // Расчёты страницы превью: масштаб рамок устройств, адреса демо-приложения, синхронизация настроек.
 
-import { parseSettings, type Settings, type ThemeChoice } from '../state/settings';
+import type { ThemeChoice } from '../state/settings';
 import type { PresetName } from './presets';
 
 export interface FrameSize {
@@ -53,27 +53,4 @@ export function splitColumns<T>(items: T[], n: number): T[][] {
     if (part.length) out.push(part);
   }
   return out.length ? out : [[]];
-}
-
-/**
- * Настройки поменяли внутри рамки с приложением (цвет предмета, подгруппа, меню планшета) —
- * страница превью подхватывает всё, кроме темы: её выбирают переключателем вверху страницы.
- * null — если менять нечего или запись испорчена.
- */
-export function externalPatch(current: Settings, raw: string | null): Partial<Settings> | null {
-  if (!raw) return null;
-  let incoming: Settings;
-  try {
-    incoming = parseSettings(JSON.parse(raw));
-  } catch {
-    return null;
-  }
-  const patch: Partial<Settings> = {};
-  for (const key of Object.keys(incoming) as (keyof Settings)[]) {
-    if (key === 'theme') continue;
-    if (JSON.stringify(incoming[key]) !== JSON.stringify(current[key])) {
-      (patch as Record<string, unknown>)[key] = incoming[key];
-    }
-  }
-  return Object.keys(patch).length ? patch : null;
 }

@@ -44,6 +44,8 @@ export function LessonRow({ lesson, phase = 'upcoming', extra }: Props) {
           <span class="nowrap">{p}</span>
         </Fragment>
       ))}
+      {/* Пометка к паре из data/schedule.json («принести штангенциркуль») — переносится как обычный текст */}
+      {lesson.note && <span class="lesson-row__note"> · {lesson.note}</span>}
     </span>
   );
 
@@ -62,7 +64,7 @@ export function LessonRow({ lesson, phase = 'upcoming', extra }: Props) {
       value={room || undefined}
       highlight={phase === 'current'}
       dimmed={phase === 'past'}
-      label={interactive ? `${subject.full}, ${time}${room ? `, ${room}` : ''}${status ? `, ${status}` : ''}` : undefined}
+      label={interactive ? `${subject.full}, ${time}${room ? `, ${room}` : ''}${status ? `, ${status}` : ''}${lesson.note ? `, ${lesson.note}` : ''}` : undefined}
       {...(interactive ? press : {})}
       onClick={interactive ? press.onClick : undefined}
     />

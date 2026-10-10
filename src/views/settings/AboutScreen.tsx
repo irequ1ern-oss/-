@@ -1,8 +1,9 @@
 // «О приложении»: версия, дата сборки, работа без интернета, защита данных, ссылка на исходный код.
 
-import { useEffect, useState } from 'preact/hooks';
+import { useContext, useEffect, useState } from 'preact/hooks';
 import { moscowClock } from '../../core/time';
 import { useAppData } from '../../shell/app';
+import { ClockContext } from '../../shell/clock';
 import type { BackInfo } from '../../shell/Stack';
 import { Cell, Group, IconTile } from '../../ui/List';
 import { Screen } from '../../ui/Screen';
@@ -59,8 +60,8 @@ export function AboutScreen({ back }: { back?: BackInfo }) {
   const { demo } = useAppData();
   const offline = useOfflineState();
   const persisted = usePersisted();
-  // Новая вишнёвая иконка. Файлы иконок для установки (PNG и манифест) заменим при переносе дизайна в приложение.
-  const icon = `${import.meta.env.BASE_URL}icons/icon-v2.svg`;
+  const testTime = useContext(ClockContext).simulated && !demo;
+  const icon = `${import.meta.env.BASE_URL}icons/icon.svg`;
 
   return (
     <Screen title="О приложении" back={back}>
@@ -105,6 +106,7 @@ export function AboutScreen({ back }: { back?: BackInfo }) {
         </Group>
 
         {demo && <p class="settings-note t-footnote">Это превью дизайна: настройки здесь хранятся отдельно от настоящего приложения.</p>}
+        {testTime && <p class="settings-note t-footnote">Включено тестовое время из адреса страницы <span class="nowrap">(?now=…)</span>.</p>}
       </div>
     </Screen>
   );

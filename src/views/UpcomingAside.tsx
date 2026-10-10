@@ -39,7 +39,12 @@ export function UpcomingAside({ hideHomework = false }: Props) {
     <div class="aside-panel upcoming">
       <h2 class="t-title2">Ближайшее</h2>
       {homework.length === 0 && soon.length === 0 ? (
-        <EmptyState icon="tray" title="Пока пусто" text="Здесь появятся ДЗ и события на ближайшие дни" />
+        <EmptyState
+          icon="tray"
+          title="Пока пусто"
+          // До этапа 3 ДЗ и событий в приложении нет совсем — говорим, когда они появятся.
+          text={items.length === 0 && events.length === 0 ? 'ДЗ и события появятся на этапе 3' : 'Здесь появятся ДЗ и события на ближайшие дни'}
+        />
       ) : (
         <>
           {homework.length > 0 && (

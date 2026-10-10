@@ -76,8 +76,8 @@ export function HomeworkView() {
 
   if (source.length === 0) {
     return (
-      <Screen title="ДЗ">
-        <EmptyState icon="check-square" title="Домашних заданий пока нет" text="Появятся на этапе 3" />
+      <Screen title="ДЗ" class="screen--centered">
+        <EmptyState plain icon="check-square" title="Домашних заданий пока нет" text="Появятся на этапе 3" />
       </Screen>
     );
   }

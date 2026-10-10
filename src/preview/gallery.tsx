@@ -14,7 +14,7 @@ import { activeLessons, resolveDay } from '../core/schedule';
 import { addDays, parseClockOverride, startOfWeek, type Clock } from '../core/time';
 import { lessonPhase } from '../core/today';
 import { mainSchedule } from '../data/schedule';
-import { getSettings, initSettings, updateSettings, useSettings, type ThemeChoice } from '../state/settings';
+import { initSettings, updateSettings, useSettings, type ThemeChoice } from '../state/settings';
 import { subjectView } from '../state/subjects';
 import { AppProviders } from '../shell/AppShell';
 import { useActions, useAppData, type AppData } from '../shell/app';
@@ -34,7 +34,7 @@ import { LessonRow } from '../views/LessonRow';
 import { PlusSheet } from '../views/PlusSheet';
 import { Hero } from '../views/today/Hero';
 import {
-  PHONE_SIZE, TABLET_LANDSCAPE, TABLET_PORTRAIT, appUrl, externalPatch, fitScale, frameMaxHeight, routeHash, splitColumns,
+  PHONE_SIZE, TABLET_LANDSCAPE, TABLET_PORTRAIT, appUrl, fitScale, frameMaxHeight, routeHash, splitColumns,
   type FrameSize,
 } from './galleryLogic';
 import { PRESETS, PRESET_LABELS, type PresetName } from './presets';
@@ -690,13 +690,8 @@ function Gallery() {
   );
 }
 
-initSettings(SETTINGS_KEY);
-
-// Настройки, изменённые внутри фреймов (цвет предмета, подгруппа), сразу видны и здесь.
-window.addEventListener('storage', (e) => {
-  if (e.key !== SETTINGS_KEY) return;
-  const patch = externalPatch(getSettings(), e.newValue);
-  if (patch) updateSettings(patch);
-});
+// Настройки, изменённые внутри рамок (цвет предмета, подгруппа), сразу видны и здесь — кроме темы:
+// её выбирают переключателем вверху страницы.
+initSettings(SETTINGS_KEY, {}, { localKeys: ['theme'] });
 
 render(<Gallery />, document.getElementById('app')!);

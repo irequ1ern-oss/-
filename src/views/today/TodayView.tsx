@@ -21,8 +21,10 @@ import './today.css';
 export function TodayView() {
   // Состояние экрана — с точностью до минуты; секунды идут только в таймере главного блока (Hero).
   const clock = useClock('minute');
-  const { src } = useAppData();
+  const { src, demo } = useAppData();
   const { name } = useSettings();
+  // ?now=… в адресе: часы идут от заданного момента — честно показываем, что время не настоящее.
+  const testTime = useContext(ClockContext).simulated && !demo;
   const layout = useLayout();
   const state = useMemo(() => computeHero(clock, src), [clock, src]);
   useWakeAt(state.changesAt, clock.date);
@@ -41,6 +43,15 @@ export function TodayView() {
         <div class="today-above">
           <p class="t-subhead t-secondary">{greeting(clock.minutes, name)}</p>
           <p class="t-footnote t-upper t-secondary today-above__date">{formatDayLong(clock.date)}</p>
+          {testTime && (
+            <p class="t-footnote today-test">
+              <Icon name="clock-countdown" size={15} />
+              <span>Тестовое время</span>
+              <a class="today-test__reset" href={location.pathname + location.hash}>
+                Сбросить
+              </a>
+            </p>
+          )}
         </div>
       }
       trailing={

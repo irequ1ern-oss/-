@@ -9,6 +9,30 @@
   font-weight: 600;
 }
 
+/* «Тестовое время · Сбросить» — когда в адресе есть ?now=… */
+.today-test {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.today-test__reset {
+  position: relative;
+  margin-left: var(--space-2);
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* Невидимая зона нажатия 44 px по высоте вокруг короткого слова */
+.today-test__reset::after {
+  content: '';
+  position: absolute;
+  inset: -13px -8px;
+}
+
 .today {
   display: flex;
   flex-direction: column;
