@@ -663,7 +663,7 @@ function ElementsSection() {
           <Cell icon={<IconTile name="info" color="gray" />} title="О приложении" accessory="chevron" onClick={example} />
         </Group>
 
-        <Group header="Строки пар" footer="Нажми — карточка предмета. Удерживай — меню: отменить, заменить, изменить день.">
+        <Group header="Строки пар" footer="Нажми — карточка предмета. Удерживай — меню: заменить или отменить пару, изменить день.">
           <SampleLessons />
         </Group>
 

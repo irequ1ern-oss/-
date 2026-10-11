@@ -18,10 +18,11 @@ export function HolidayCard({ holiday, today }: { holiday: Holiday; today: DateS
     notifyChange(`${formatDayMonth(holiday.date)} — выходной`, undo);
   };
 
-  // «Не сейчас» прячет карточку только для этого праздника; отметить его можно и потом, в настройках.
+  // «Не сейчас» прячет карточку только для этого праздника; отметить его можно и потом, в настройках
+  // («Изменения расписания → Праздники»). Подпись уведомления короткая — в одну строку и на 360 px.
   const later = () => {
     dismissHoliday(holiday.date);
-    notifyChange('Отметить можно в настройках', () =>
+    notifyChange('Карточка скрыта', () =>
       updateSettings((s) => ({ dismissedHolidays: s.dismissedHolidays.filter((d) => d !== holiday.date) })),
     );
   };

@@ -77,6 +77,10 @@
   transform: none;
 }
 
+.navbar.is-collapsed .navbar__title.is-hidden {
+  visibility: hidden;
+}
+
 /* Пока виден большой заголовок, маленький не занимает места — подпись «назад» не сокращается */
 .navbar:not(.is-collapsed) .navbar__title {
   max-width: 0;

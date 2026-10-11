@@ -7,7 +7,7 @@ import { formatDayMonth, formatRoom } from '../../core/format';
 import { holidayOn } from '../../core/holidays';
 import { activePeriod, lessonRoom, type DateOverride, type ScheduleSources } from '../../core/schedule';
 import type { DateStr } from '../../core/time';
-import { deleteOverrides, newStamp } from '../../state/changes';
+import { deleteOverrides, getChanges, newStamp } from '../../state/changes';
 import { useSettings } from '../../state/settings';
 import { subjectView } from '../../state/subjects';
 import { useAppData, useSubject } from '../../shell/app';
@@ -15,10 +15,10 @@ import { navigate } from '../../shell/nav';
 import type { BackInfo } from '../../shell/Stack';
 import { Switch, TextField } from '../../ui/controls';
 import { Cell, Group, IconTile } from '../../ui/List';
-import { openContextMenu, showToast, type MenuItem } from '../../ui/overlays';
+import { dismissSheet, openContextMenu, openSheet, showToast, type MenuItem } from '../../ui/overlays';
 import { Screen } from '../../ui/Screen';
 import { SubjectIcon } from '../../ui/SubjectIcon';
-import { changesPath, dayTitleLong, periodTile, wasText } from './changesText';
+import { changesPath, dayTitleLong, dayTitleShort, periodTile, wasText } from './changesText';
 import { ActionCell, confirmAction } from './fields';
 import { openLessonSheet } from './LessonEditor';
 import {
@@ -47,7 +47,12 @@ export function DayEditorScreen({ date, back }: { date: DateStr; back?: BackInfo
   );
 }
 
-/** Содержимое шторки дня (заголовок шторки — «Чт, 15 октября»). close — закрыть шторку перед переходом на другой экран. */
+/** Шторка дня: «Чт, 15 октября». */
+export function openDaySheet(date: DateStr): void {
+  const id = openSheet({ title: dayTitleShort(date), content: () => <DayEditorSheet date={date} close={() => dismissSheet(id)} /> });
+}
+
+/** Содержимое шторки дня. close — закрыть шторку перед переходом на другой экран. */
 export function DayEditorSheet({ date, close }: { date: DateStr; close: () => void }) {
   return (
     <div class="changes-sheet">
@@ -93,7 +98,7 @@ function DayEditorBody({ date, leave }: { date: DateStr; leave?: () => void }) {
           !dayOff && holiday
             ? `Праздник: ${holiday.name}. Пар, скорее всего, не будет.`
             : dayOff
-              ? 'Пары, которые добавить после этой отметки, останутся.'
+              ? 'Пары, добавленные после этой отметки, останутся.'
               : undefined
         }
       >
@@ -164,7 +169,9 @@ function ReasonCell({ date, marks, src }: { date: DateStr; marks: DateOverride[]
   const commit = () => {
     const { value: v, saved: s, src: current } = latest.current;
     if (v.trim() === s.trim()) return;
-    const plan = planDayOffNote(date, v, current);
+    // Отметки берём из хранилища: если «Пар нет весь день» уже выключили, причину сохранять некуда
+    // (иначе сохранение вернуло бы удалённую отметку).
+    const plan = planDayOffNote(date, v, { ...current, overrides: getChanges().overrides });
     if (plan) applyPlan(plan);
   };
   // Шторку закрыли, не убрав фокус с поля, — всё равно сохраняем.
@@ -195,7 +202,7 @@ function EditableLesson({ t, day, date, src }: { t: TracedLesson; day: TracedDay
 
   const row = (interactive: boolean, onClick?: (e: MouseEvent) => void) => (
     <Cell
-      class={`lesson-row lesson-row--${lesson.status}`}
+      class={`lesson-row day-lesson lesson-row--${lesson.status}`}
       icon={<SubjectIcon color={subject.color} icon={subject.icon} />}
       title={
         <span class="lesson-row__title">
@@ -205,12 +212,18 @@ function EditableLesson({ t, day, date, src }: { t: TracedLesson; day: TracedDay
       }
       subtitle={
         <span class="tabular">
-          <span class="nowrap">{time}</span>
-          {extra && <span class="lesson-row__note"> · {extra}</span>}
+          {/* У отменённой пары зачёркнуто только время: причина и «было: …» читаются как обычно */}
+          <span class="nowrap day-lesson__time">{time}</span>
+          {/* «было: каб. 6 · замена кабинета» — отдельной строкой, чтобы не слипалось с кабинетом справа */}
+          {extra && <span class="day-lesson__extra">{extra}</span>}
         </span>
       }
       value={room || undefined}
-      label={interactive ? `${subject.full}, ${time}${room ? `, ${room}` : ''}${status ? `, ${status}` : ''}. Действия` : undefined}
+      label={
+        interactive
+          ? `${subject.full}, ${time}${room ? `, ${room}` : ''}${status ? `, ${status}` : ''}${extra ? `, ${extra}` : ''}. Действия`
+          : undefined
+      }
       aria-haspopup={interactive ? 'menu' : undefined}
       onClick={onClick}
     />

@@ -20,16 +20,22 @@ interface Props {
   class?: string;
 }
 
+/** Уже этой ширины (px) маленький заголовок не показываем: от него остались бы две буквы. */
+const MIN_SMALL_TITLE = 64;
+
 export function Screen({ title, above, subtitle, trailing, back, children, class: cls }: Props) {
   const scroller = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLElement>(null);
   const barEnd = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const smallTitle = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(false);
   // Размер верхней панели: высота меняется с вырезом экрана и раскладкой, ширина — с поворотом и меню.
   const [barSize, setBarSize] = useState({ w: 0, h: 0 });
   // Подпись «назад» не помещается — пишем «Назад», как в iOS, а не обрезанное «Настр…».
   const [shortBack, setShortBack] = useState(false);
+  // Маленький заголовок сжался до пары букв («П…») — лучше не показывать его вовсе: большой заголовок только что был виден.
+  const [hideSmallTitle, setHideSmallTitle] = useState(false);
 
   useLayoutEffect(() => {
     const el = bar.current;
@@ -58,13 +64,24 @@ export function Screen({ title, above, subtitle, trailing, back, children, class
   }, [barSize.h]);
 
   // Сначала пробуем полную подпись, затем проверяем, не вытолкнули ли колонки панели правый край за поля.
-  useLayoutEffect(() => setShortBack(false), [back?.label, collapsed, barSize.w]);
+  useLayoutEffect(() => {
+    setShortBack(false);
+    setHideSmallTitle(false);
+  }, [back?.label, collapsed, barSize.w, title]);
   useLayoutEffect(() => {
     const el = bar.current;
     const end = barEnd.current;
     if (!back || shortBack || !el || !end) return;
     const limit = el.getBoundingClientRect().right - parseFloat(getComputedStyle(el).paddingRight);
     if (end.getBoundingClientRect().right > limit + 0.5) setShortBack(true);
+  });
+  // Если маленькому заголовку тесно, сначала сокращаем подпись «назад» (как iOS), и только потом прячем заголовок.
+  useLayoutEffect(() => {
+    const t = smallTitle.current;
+    if (!collapsed || hideSmallTitle || !t) return;
+    if (t.scrollWidth <= t.clientWidth + 0.5) return;
+    if (back && !shortBack) setShortBack(true);
+    else if (t.clientWidth < MIN_SMALL_TITLE) setHideSmallTitle(true);
   });
 
   return (
@@ -83,7 +100,7 @@ export function Screen({ title, above, subtitle, trailing, back, children, class
             </button>
           )}
         </div>
-        <div class="navbar__title t-headline" aria-hidden={!collapsed}>
+        <div ref={smallTitle} class={`navbar__title t-headline${hideSmallTitle ? ' is-hidden' : ''}`} aria-hidden={!collapsed || hideSmallTitle}>
           {title}
         </div>
         <div ref={barEnd} class="navbar__side navbar__side--end">

@@ -28,19 +28,32 @@ const STATUS: Partial<Record<ResolvedLesson['status'], string>> = {
   added: 'добавлена',
 };
 
-/** Пункты меню пары — только то, что уже работает (ДЗ и заметки к паре появятся на этапе 3). */
+/**
+ * Пункты меню пары — только то, что уже работает (ДЗ и заметки к паре появятся на этапе 3).
+ * Подписи и иконки — как в правке дня; отмена и удаление (красные) — последними, как в iOS.
+ */
 export function lessonMenuItems(lesson: ResolvedLesson, openSubject: (id: string) => void): MenuItem[] {
+  const toggle = () => cancelLessonQuick(lesson.date, lesson);
+  const edit = () => openLessonEditor({ date: lesson.date, lesson });
+  const day: MenuItem = { label: 'Изменить день', icon: 'calendar-dots', onSelect: () => openDayEditor(lesson.date) };
   const items: MenuItem[] = [{ label: 'О предмете', icon: 'info', onSelect: () => openSubject(lesson.subjectId) }];
   if (lesson.status === 'cancelled') {
-    items.push({ label: 'Вернуть пару', icon: 'arrow-u-up-left', onSelect: () => cancelLessonQuick(lesson.date, lesson) });
-  } else {
     // Отменённую пару заменить нельзя: замена ищет неотменённую пару с тем же началом.
+    items.push({ label: 'Вернуть пару', icon: 'arrow-u-up-left', onSelect: toggle }, day);
+  } else if (lesson.status === 'added') {
+    // Добавленную пару не отменяют, а убирают совсем (cancelLessonQuick удаляет её добавление).
     items.push(
-      { label: 'Отменить пару', icon: 'x-circle', onSelect: () => cancelLessonQuick(lesson.date, lesson) },
-      { label: 'Заменить…', icon: 'swap', onSelect: () => openLessonEditor({ date: lesson.date, lesson }) },
+      { label: 'Изменить…', icon: 'pencil-simple', onSelect: edit },
+      day,
+      { label: 'Удалить пару', icon: 'trash', destructive: true, onSelect: toggle },
+    );
+  } else {
+    items.push(
+      { label: 'Заменить…', icon: 'swap', onSelect: edit },
+      day,
+      { label: 'Отменить пару', icon: 'calendar-x', destructive: true, onSelect: toggle },
     );
   }
-  items.push({ label: 'Изменить день', icon: 'pencil-simple', onSelect: () => openDayEditor(lesson.date) });
   return items;
 }
 

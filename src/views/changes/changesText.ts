@@ -1,9 +1,9 @@
 // Подписи и адреса экранов «Изменения расписания» (без отрисовки — их удобно проверять тестами).
 
-import { describePeriodDates, groupOverridesByDate, periodStatus } from '../../core/changes';
+import { describePeriodDates, groupOverridesByDate, periodStatus, type DateGroup } from '../../core/changes';
 import { capitalize, formatDayLong, formatDayMonth, formatDuration, formatRoom, plural, weekdayName, weekdayShort } from '../../core/format';
 import type { HolidayRow, Holiday } from '../../core/holidays';
-import { describeHoliday } from '../../core/holidays';
+import { describeHoliday, isHolidayMark } from '../../core/holidays';
 import { lessonRoom, type DateOverride, type Lesson, type PeriodKind, type SchedulePeriod, type ScheduleSources } from '../../core/schedule';
 import { addDays, diffDays, isValidDate, isValidTime, startOfWeek, toMinutes, type DateStr, type TimeStr } from '../../core/time';
 import type { IconName } from '../../ui/iconData';
@@ -202,10 +202,20 @@ export function dateLines(lines: string[]): string {
   return `${lines[0]}\nи ещё ${rest} ${plural(rest, 'изменение', 'изменения', 'изменений')}`;
 }
 
+/**
+ * Даты для группы «Изменения на даты». Впереди не показываем дни, где только отмеченный праздник:
+ * они уже есть (с переключателем) в группе «Праздники». Прошедшие — все.
+ */
+export function listedDateGroups(overrides: DateOverride[], today: DateStr): { upcoming: DateGroup[]; past: DateGroup[]; holidays: number } {
+  const { upcoming, past } = groupOverridesByDate(overrides, today);
+  const listed = upcoming.filter((g) => !g.overrides.every(isHolidayMark));
+  return { upcoming: listed, past, holidays: upcoming.length - listed.length };
+}
+
 /** Сколько расписаний и дат с изменениями ещё впереди или действуют сейчас — для строки в «Настройках». */
 export function activeChangesCount(src: Pick<ScheduleSources, 'periods' | 'overrides'>, today: DateStr): number {
   const periods = src.periods.filter((p) => !p.deleted && periodStatus(p, today) !== 'past').length;
-  return periods + groupOverridesByDate(src.overrides, today).upcoming.length;
+  return periods + listedDateGroups(src.overrides, today).upcoming.length;
 }
 
 // ---------- Праздники ----------
@@ -276,4 +286,43 @@ function blockItem(year: string, rows: HolidayRow[]): HolidayItem {
     marks,
     on: marks.length === n,
   };
+}
+
+// ---------- Выбор дня ----------
+
+/** Сколько дней вперёд показывать в выборе дня (дальше — «Другая дата»). */
+export const PICK_DAYS = 7;
+
+/** Заголовок строки в выборе дня: «Сегодня», «Завтра», дальше — «Ср, 14 октября». */
+export function pickDayTitle(date: DateStr, today: DateStr): string {
+  const d = diffDays(today, date);
+  if (d === 0) return 'Сегодня';
+  if (d === 1) return 'Завтра';
+  return dayTitleShort(date);
+}
+
+/**
+ * Подпись строки в выборе дня: «Пн, 12 октября · 5 пар · 09:00–16:30» (для сегодня и завтра — с датой),
+ * «Пар нет весь день», «Пар нет».
+ */
+export function pickDaySubtitle(
+  date: DateStr,
+  today: DateStr,
+  lessons: Pick<Lesson, 'start' | 'end'>[],
+  dayOff: boolean,
+): string {
+  const d = diffDays(today, date);
+  const head = d === 0 || d === 1 ? `${dayTitleShort(date)} · ` : '';
+  if (dayOff) return `${head}Пар нет весь день`;
+  if (!lessons.length) return `${head}Пар нет`;
+  const start = lessons.reduce((m, l) => (toMinutes(l.start) < toMinutes(m) ? l.start : m), lessons[0].start);
+  const end = lessons.reduce((m, l) => (toMinutes(l.end) > toMinutes(m) ? l.end : m), lessons[0].end);
+  const n = lessons.length;
+  return `${head}${n} ${plural(n, 'пара', 'пары', 'пар')} · ${start}–${end}`;
+}
+
+/** «Отменятся пары в 3 учебных дня»; пусто — в эти дни пар и так нет. */
+export function daysOffSummary(n: number): string {
+  if (n <= 0) return '';
+  return `Отменятся пары в ${n} ${plural(n, 'учебный день', 'учебных дня', 'учебных дней')}`;
 }

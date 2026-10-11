@@ -59,7 +59,8 @@ export function dayMarks(day: ResolvedDay, homework: HomeworkItem[]): DayMarks {
 }
 
 /** Название временного расписания по умолчанию: в подписи плашки его не повторяем. */
-const DEFAULT_PERIOD_TITLE = 'Временное расписание';
+/** Как называется временное расписание на плашке — по тому, как его создали. */
+const PERIOD_LABEL = { custom: 'Временное расписание', practice: 'Практика', break: 'Каникулы' } as const;
 
 export interface BannerText {
   title: string;
@@ -77,10 +78,12 @@ export function changesBannerText(day: ResolvedDay, subjectName: (id: string) =>
   const shown = dayOffAt === -1 ? day.overrides : [day.overrides[dayOffAt], ...day.overrides.slice(dayOffAt + 1).filter((o) => o.action === 'add')];
   const about = shown.map((o) => describeOverride(o, subjectName, src)).join(' · ');
   if (!day.period) return { title: 'Изменения на этот день', subtitle: about || undefined };
+  const label = PERIOD_LABEL[day.period.kind ?? 'custom'];
   const title = day.period.title.trim();
-  const subtitle = [title !== DEFAULT_PERIOD_TITLE ? title : '', about].filter(Boolean).join(' · ');
+  // Название не повторяем, если оно совпадает с подписью на плашке («Практика до 13.11» · «Практика»).
+  const subtitle = [title !== label && title !== PERIOD_LABEL.custom ? title : '', about].filter(Boolean).join(' · ');
   // «до 17.10» не разрывается: на узком экране переносится вся эта часть.
-  return { title: `Временное расписание до\u00a0${formatDDMM(day.period.to)}`, subtitle: subtitle || undefined };
+  return { title: `${label} до\u00a0${formatDDMM(day.period.to)}`, subtitle: subtitle || undefined };
 }
 
 /** Подпись дня для экранного диктора: «Четверг, 15 октября, 5 пар, есть изменения». */

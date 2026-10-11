@@ -1,15 +1,22 @@
 // Настройки (вместо старого «Ещё») и вложенные экраны:
-// [] — главный, ['subjects'], ['subjects', id], ['schedule'], ['about'].
+// [] — главный, ['subjects'], ['subjects', id], ['schedule'], ['about'],
+// ['changes'] и экраны изменений расписания: ['changes', 'day-2026-10-15'], ['changes', 'period-<id>'], ['changes', 'new-practice'].
 
 import { mainSchedule } from '../../data/schedule';
+import { getChanges } from '../../state/changes';
 import { getSettings, updateSettings, useSettings, type ThemeChoice } from '../../state/settings';
-import { subjectView } from '../../state/subjects';
+import { subjectView, withUserSubjects } from '../../state/subjects';
 import { useAppData } from '../../shell/app';
+import { useClock } from '../../shell/clock';
 import { navigate } from '../../shell/nav';
 import type { BackInfo } from '../../shell/Stack';
 import { Cell, Group, IconTile } from '../../ui/List';
 import { Screen } from '../../ui/Screen';
 import { Segmented, Switch, TextField } from '../../ui/controls';
+import { ChangesScreen } from '../changes/ChangesScreen';
+import { activeChangesCount, dayTitleShort, NEW_PERIOD_TITLES, parseChangesPath } from '../changes/changesText';
+import { DayEditorScreen } from '../changes/DayEditor';
+import { PeriodEditorScreen } from '../changes/PeriodEditor';
 import { AboutScreen } from './AboutScreen';
 import { ScheduleScreen } from './ScheduleScreen';
 import { SubjectEditor, SubjectsScreen } from './SubjectsScreen';
@@ -26,15 +33,43 @@ export function SettingsView({ path, back }: Props) {
   if (section === 'subjects') return id ? <SubjectEditor id={id} back={back} /> : <SubjectsScreen back={back} />;
   if (section === 'schedule') return <ScheduleScreen back={back} />;
   if (section === 'about') return <AboutScreen back={back} />;
+  if (section === 'changes') return <ChangesRoute id={id} back={back} />;
   return <SettingsRoot back={back} />;
+}
+
+function ChangesRoute({ id, back }: { id?: string; back?: BackInfo }) {
+  const route = parseChangesPath(id) ?? { screen: 'list' };
+  switch (route.screen) {
+    case 'day':
+      return <DayEditorScreen date={route.date} back={back} />;
+    case 'period':
+      return <PeriodEditorScreen key={route.id} id={route.id} back={back} />;
+    case 'new':
+      return <PeriodEditorScreen key={`new-${route.kind}`} kind={route.kind} back={back} />;
+    default:
+      return <ChangesScreen back={back} />;
+  }
+}
+
+/** Заголовок экрана изменений расписания (для «‹ Назад»). */
+function changesTitle(id: string | undefined): string {
+  const route = parseChangesPath(id);
+  if (!route || route.screen === 'list') return 'Изменения расписания';
+  if (route.screen === 'day') return dayTitleShort(route.date);
+  if (route.screen === 'new') return NEW_PERIOD_TITLES[route.kind];
+  return getChanges().periods.find((p) => p.id === route.id)?.title ?? 'Расписание';
 }
 
 /** Заголовок экрана настроек (для кнопки «‹ Назад» на вложенных экранах). */
 export function settingsTitle(path: string[]): string {
   const [section, id] = path;
-  if (section === 'subjects') return id ? subjectView(id, mainSchedule, getSettings()).short : 'Предметы';
+  if (section === 'subjects') {
+    // Свои предметы («Практика») тоже в списке — их названия берём из хранилища изменений.
+    return id ? subjectView(id, withUserSubjects(mainSchedule, getChanges().subjects), getSettings()).short : 'Предметы';
+  }
   if (section === 'schedule') return 'Основное расписание';
   if (section === 'about') return 'О приложении';
+  if (section === 'changes') return changesTitle(id);
   return 'Настройки';
 }
 
@@ -54,7 +89,9 @@ const go = (path: string[]) => navigate({ tab: 'settings', path });
 
 function SettingsRoot({ back }: { back?: BackInfo }) {
   const settings = useSettings();
-  const { main } = useAppData();
+  const { main, src } = useAppData();
+  const { date: today } = useClock('minute');
+  const changes = activeChangesCount(src, today);
   const roomsNote = subgroupRoomsNote(subjectsWithSubgroupRooms(main).map((id) => subjectView(id, main, settings).short));
 
   return (
@@ -96,7 +133,7 @@ function SettingsRoot({ back }: { back?: BackInfo }) {
             }
           />
           <Cell
-            icon={<IconTile name="book-open" color="orange" />}
+            icon={<IconTile name="book-open" color="brown" />}
             title="Предметы"
             value={<span class="tabular">{main.subjects.length}</span>}
             accessory="chevron"
@@ -107,6 +144,14 @@ function SettingsRoot({ back }: { back?: BackInfo }) {
             title="Основное расписание"
             accessory="chevron"
             onClick={() => go(['schedule'])}
+          />
+          <Cell
+            icon={<IconTile name="swap" color="orange" />}
+            title="Изменения расписания"
+            value={changes > 0 ? <span class="tabular">{changes}</span> : undefined}
+            accessory="chevron"
+            label={changes > 0 ? `Изменения расписания: ${changes}` : undefined}
+            onClick={() => go(['changes'])}
           />
         </Group>
 

@@ -37,6 +37,7 @@ export type LessonEditorMode =
 export function lessonEditorTitle(mode: LessonEditorMode): string {
   if (mode.kind === 'period') return mode.lesson ? 'Пара' : 'Новая пара';
   if (!mode.lesson) return 'Добавить пару';
+  if (mode.lesson.status === 'cancelled') return 'Другая пара';
   return mode.lesson.status === 'added' ? 'Изменить пару' : 'Заменить пару';
 }
 
@@ -204,7 +205,7 @@ function LessonEditor({ mode, close }: { mode: LessonEditorMode; close: () => vo
       </Group>
       <div class="changes-buttons">
         <Button block size="lg" onClick={save}>
-          Сохранить
+          {initial.source && !(mode.kind === 'date' && mode.lesson?.status === 'cancelled') ? 'Сохранить' : 'Добавить'}
         </Button>
         {canDelete && (
           <Button block size="lg" variant="gray" class="changes-buttons__danger" onClick={remove}>

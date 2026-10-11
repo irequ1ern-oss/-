@@ -139,6 +139,15 @@ describe('плашка изменений дня', () => {
     expect(banner('2026-10-14', { periods: [plain] })).toEqual({ title: 'Временное расписание до\u00a017.10' });
   });
 
+  it('практика и каникулы называются на плашке своим именем', () => {
+    const practice = period({ from: '2026-10-12', to: '2026-11-13', title: 'Практика', kind: 'practice', week: {} });
+    expect(banner('2026-10-14', { periods: [practice] })).toEqual({ title: 'Практика до\u00a013.11' });
+    const named = period({ from: '2026-10-12', to: '2026-11-13', title: 'УП.04.01', kind: 'practice', week: {} });
+    expect(banner('2026-10-14', { periods: [named] })).toEqual({ title: 'Практика до\u00a013.11', subtitle: 'УП.04.01' });
+    const winter = period({ from: '2026-12-29', to: '2027-01-10', title: 'Каникулы', kind: 'break', week: {} });
+    expect(banner('2026-12-30', { periods: [winter] })).toEqual({ title: 'Каникулы до\u00a010.01' });
+  });
+
   it('только изменения на дату: что именно изменилось', () => {
     const cancel = override({ date: '2026-10-12', action: 'cancel', target: '09:00' });
     expect(banner('2026-10-12', { overrides: [cancel] })).toEqual({
