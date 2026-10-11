@@ -176,14 +176,14 @@
 /* ---------- Выбранный день ---------- */
 .week-day__head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--space-3);
   padding: 0 var(--space-1);
   margin-bottom: var(--space-2);
 }
 
 .week-day__title {
+  flex: 1;
   min-width: 0;
 }
 
@@ -191,34 +191,9 @@
   flex: none;
 }
 
-/*
- * Плашка «Есть изменения». Оттенок --warning на непрозрачной карточке, а не на фоне экрана:
- * так текст --warning проходит AA (4.5:1) и в светлой теме.
- */
-.week-changes {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: var(--tap-min);
-  margin-bottom: var(--space-3);
-  padding: 10px var(--space-4);
-  border-radius: var(--r-group);
-  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
-  color: var(--warning);
-}
-
-.week-changes__icon {
-  flex: none;
-}
-
-.week-changes__text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.week-changes__title {
-  font-weight: 600;
+/* «Изменить»: зона нажатия 44 px, но строку заголовка не раздувает, карандаш — у правого края карточек */
+.week-day__edit.icon-btn {
+  margin: -12px -12px -12px calc(-1 * var(--space-2));
 }
 
 .week-homework {

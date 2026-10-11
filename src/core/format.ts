@@ -62,11 +62,23 @@ export function relativeDayName(date: DateStr, today: DateStr): string | null {
 
 /** «12–16 октября» или «29 сентября – 3 октября» (пн–пт). */
 export function formatWeekRange(monday: DateStr): string {
-  const friday = addDays(monday, 4);
-  const a = parts(monday);
-  const b = parts(friday);
-  if (a.month === b.month) return `${a.day}–${b.day} ${MONTHS_GEN[b.month - 1]}`;
-  return `${formatDayMonth(monday)} – ${formatDayMonth(friday)}`;
+  return formatDateRange(monday, addDays(monday, 4));
+}
+
+/**
+ * Промежуток дат: «19–31 октября», «28 октября – 3 ноября», один день — «5 ноября».
+ * Год пишем, только если промежуток растянулся на год и больше (иначе «1 октября – 1 октября» непонятно).
+ */
+export function formatDateRange(from: DateStr, to: DateStr): string {
+  if (from === to) return formatDayMonth(from);
+  const a = parts(from);
+  const b = parts(to);
+  const sameYear = from.slice(0, 4) === to.slice(0, 4);
+  if (!sameYear && to.slice(5) >= from.slice(5)) {
+    return `${formatDayMonth(from)} ${from.slice(0, 4)} – ${formatDayMonth(to)} ${to.slice(0, 4)}`;
+  }
+  if (sameYear && a.month === b.month) return `${a.day}–${b.day} ${MONTHS_GEN[b.month - 1]}`;
+  return `${formatDayMonth(from)} – ${formatDayMonth(to)}`;
 }
 
 /** «45 мин», «1 ч», «1 ч 20 мин». Число и единица — через неразрывный пробел (не разрываются при переносе). */

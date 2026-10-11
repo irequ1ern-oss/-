@@ -1,6 +1,8 @@
 // Страница превью дизайна (preview/index.html): приложение в рамках телефона и планшета,
-// главный блок «Сегодня» во всех состояниях, цвета предметов и элементы дизайн-системы.
+// главный блок «Сегодня» во всех состояниях, цвета предметов, элементы дизайн-системы и изменения расписания.
 // Экраны не повторяем — показываем настоящее демо-приложение (preview/app.html) во фреймах.
+// Строки пар и раздел «Изменения» берут расписание из хранилища изменений в памяти страницы — меню пары и
+// «Отметить» работают по-настоящему (до перезагрузки).
 
 import { render, type ComponentChildren, type RefObject } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
@@ -10,12 +12,14 @@ import '../ui/base.css';
 import { COLOR_NAMES, SUBJECT_COLORS } from '../core/colors';
 import { formatDayMonth, weekdayShort } from '../core/format';
 import { computeHero } from '../core/hero';
+import { holidayMarkOverride, holidaySuggestions, russianHolidays } from '../core/holidays';
 import { activeLessons, resolveDay } from '../core/schedule';
-import { addDays, parseClockOverride, startOfWeek, type Clock } from '../core/time';
+import { addDays, clockAt, parseClockOverride, startOfWeek, type Clock } from '../core/time';
 import { lessonPhase } from '../core/today';
 import { mainSchedule } from '../data/schedule';
+import { initChanges, useChanges } from '../state/changes';
 import { initSettings, updateSettings, useSettings, type ThemeChoice } from '../state/settings';
-import { subjectView } from '../state/subjects';
+import { subjectView, withUserSubjects } from '../state/subjects';
 import { AppProviders } from '../shell/AppShell';
 import { useActions, useAppData, type AppData } from '../shell/app';
 import { startedClock, useClock, type ClockSource } from '../shell/clock';
@@ -33,12 +37,15 @@ import { openSheet, showToast } from '../ui/overlays';
 import { LessonRow } from '../views/LessonRow';
 import { PlusSheet } from '../views/PlusSheet';
 import { Hero } from '../views/today/Hero';
+import { HolidayCard } from '../views/today/HolidayCard';
+import { cancelledDayInfo } from '../views/today/todayLogic';
+import { ChangesBanner } from '../views/week/ChangesBanner';
 import {
   PHONE_SIZE, TABLET_LANDSCAPE, TABLET_PORTRAIT, appUrl, fitScale, frameMaxHeight, routeHash, splitColumns,
   type FrameSize,
 } from './galleryLogic';
 import { PRESETS, PRESET_LABELS, type PresetName } from './presets';
-import { demoData } from './sampleData';
+import { demoChanges, demoData } from './sampleData';
 import './gallery.css';
 
 const SETTINGS_KEY = 'ucheba.preview.settings';
@@ -61,6 +68,9 @@ const DEMOS = Object.fromEntries(
     return [name, { data: demoData(start.date), clock: startedClock(start) }];
   }),
 ) as Record<PresetName, { data: AppData; clock: ClockSource }>;
+
+/** Дата состояния «Идёт пара»: от неё считаются изменения расписания в хранилище страницы. */
+const LIVE_DATE = parseClockOverride(PRESETS.lesson)!.date;
 
 const HERO_NOTES: Record<PresetName, string> = {
   lesson: 'Таймер до конца пары, кольцо — сколько прошло.',
@@ -495,6 +505,85 @@ function SubjectsSection() {
   );
 }
 
+/**
+ * Данные состояния «Идёт пара», но расписание — из хранилища изменений страницы (как AppRoot в приложении):
+ * отменили пару из меню или отметили праздник — строки и плашки сразу меняются.
+ */
+function LiveProviders({ children }: { children: ComponentChildren }) {
+  const changes = useChanges();
+  const data = useMemo<AppData>(() => {
+    const main = withUserSubjects(mainSchedule, changes.subjects);
+    return { ...DEMOS.lesson.data, main, src: { main, periods: changes.periods, overrides: changes.overrides } };
+  }, [changes]);
+  return (
+    <AppProviders data={data} clock={DEMOS.lesson.clock}>
+      {children}
+    </AppProviders>
+  );
+}
+
+function ChangesSection() {
+  const clock = useClock('minute');
+  const { src } = useAppData();
+  const { dismissedHolidays } = useSettings();
+  const sample = useMemo(() => {
+    const thursday = resolveDay(addDays(startOfWeek(clock.date), 3), src);
+    const period = src.periods[0];
+    // Карточка — ближайший праздник с парами (на «Сегодня» она видна только за 14 дней до него).
+    const holiday = holidaySuggestions(clock.date, src).find((h) => !dismissedHolidays.includes(h.date)) ?? null;
+    // «Пар нет» в отмеченный праздник: первый праздник с парами, отмечен только для этого примера.
+    const festive = russianHolidays(clock.date, addDays(clock.date, 366)).find((h) => activeLessons(resolveDay(h.date, src)).length > 0);
+    let marked = null;
+    if (festive) {
+      const markSrc = { ...src, overrides: [...src.overrides, holidayMarkOverride(festive, { id: 'gallery-mark', now: '2026-10-09T10:00:00+03:00' })] };
+      const state = computeHero(clockAt(festive.date, '10:00'), markSrc);
+      marked = { date: festive.date, state, info: cancelledDayInfo(state.today) };
+    }
+    return { thursday, periodDay: period ? resolveDay(period.from, src) : null, holiday, marked };
+  }, [clock.date, src, dismissedHolidays]);
+  return (
+    <section id="changes" class="gal-section" aria-labelledby="changes-title">
+      <SectionHead
+        n={7}
+        id="changes-title"
+        title="Изменения расписания"
+        text="Плашка над парами дня («Сегодня», «Неделя»), карточка праздника и главный блок в отмеченный праздник. Нажми на плашку — правка дня."
+      />
+      <div class="gal-heroes">
+        {sample.periodDay && (
+          <figure class="gal-hero">
+            <figcaption class="gal-hero__cap t-footnote t-secondary">Временное расписание</figcaption>
+            <ChangesBanner day={sample.periodDay} />
+          </figure>
+        )}
+        <figure class="gal-hero">
+          <figcaption class="gal-hero__cap t-footnote t-secondary">Изменения на дату</figcaption>
+          <ChangesBanner day={sample.thursday} />
+        </figure>
+        {sample.holiday && (
+          <figure class="gal-hero">
+            <figcaption class="gal-hero__cap t-footnote t-secondary">
+              Праздник с парами — за 14 дней на «Сегодня». «Отметить» и «Не сейчас» работают.
+            </figcaption>
+            <HolidayCard holiday={sample.holiday} today={clock.date} />
+          </figure>
+        )}
+        {sample.marked && (
+          <figure class="gal-hero">
+            <figcaption class="gal-hero__cap t-footnote t-secondary">Главный блок в отмеченный праздник</figcaption>
+            <Hero
+              hero={sample.marked.state.hero}
+              today={sample.marked.date}
+              totalToday={0}
+              cancelled={sample.marked.info}
+            />
+          </figure>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /** Строки пар на примерных данных: прошедшая, текущая, следующая и замена в четверг. */
 function SampleLessons() {
   const clock = useClock('minute');
@@ -574,7 +663,7 @@ function ElementsSection() {
           <Cell icon={<IconTile name="info" color="gray" />} title="О приложении" accessory="chevron" onClick={example} />
         </Group>
 
-        <Group header="Строки пар" footer="Нажми — карточка предмета. Удерживай — меню.">
+        <Group header="Строки пар" footer="Нажми — карточка предмета. Удерживай — меню: отменить, заменить, изменить день.">
           <SampleLessons />
         </Group>
 
@@ -604,6 +693,7 @@ const SECTIONS = [
   ['try', 'Попробовать'],
   ['subjects', 'Предметы'],
   ['elements', 'Элементы'],
+  ['changes', 'Изменения'],
 ] as const;
 
 function Intro() {
@@ -670,7 +760,7 @@ function Gallery() {
   }, []);
 
   return (
-    <AppProviders data={DEMOS.lesson.data} clock={DEMOS.lesson.clock}>
+    <LiveProviders>
       <div class="gal">
         <Toolbar theme={theme} />
         <main class="gal-main">
@@ -683,15 +773,18 @@ function Gallery() {
           <TrySection theme={theme} />
           <SubjectsSection />
           <ElementsSection />
+          <ChangesSection />
         </main>
         <OverlayHost />
       </div>
-    </AppProviders>
+    </LiveProviders>
   );
 }
 
 // Настройки, изменённые внутри рамок (цвет предмета, подгруппа), сразу видны и здесь — кроме темы:
 // её выбирают переключателем вверху страницы.
 initSettings(SETTINGS_KEY, {}, { localKeys: ['theme'] });
+// Изменения расписания страницы — только в памяти: на устройство не пишутся и с фреймами не смешиваются.
+void initChanges({ backend: 'memory', initial: demoChanges(LIVE_DATE) });
 
 render(<Gallery />, document.getElementById('app')!);

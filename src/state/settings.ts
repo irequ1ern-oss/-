@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'preact/hooks';
 import { isSubjectColor, type SubjectColor } from '../core/colors';
+import { isValidDate, type DateStr } from '../core/time';
 import { ICONS, type IconName } from '../ui/iconData';
 
 export type ThemeChoice = 'auto' | 'light' | 'dark' | 'amoled';
@@ -26,6 +27,8 @@ export interface Settings {
   subjects: Record<string, SubjectPrefs>;
   /** Уведомление «готово к работе без интернета» уже показывали. */
   offlineToastShown: boolean;
+  /** Праздники, которые на «Сегодня» попросили не предлагать («Не сейчас»). */
+  dismissedHolidays: DateStr[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -36,7 +39,17 @@ export const DEFAULT_SETTINGS: Settings = {
   sidebarCollapsed: false,
   subjects: {},
   offlineToastShown: false,
+  dismissedHolidays: [],
 };
+
+/** Сколько отклонённых праздников помнить: старые всё равно уже прошли. */
+const MAX_DISMISSED_HOLIDAYS = 50;
+
+/** Только настоящие даты, без повторов, по порядку; если их слишком много — самые поздние. */
+function parseDates(value: unknown, max: number): DateStr[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter(isValidDate))].sort().slice(-max);
+}
 
 const THEMES: ThemeChoice[] = ['auto', 'light', 'dark', 'amoled'];
 
@@ -70,6 +83,7 @@ export function parseSettings(raw: unknown): Settings {
     sidebarCollapsed: s.sidebarCollapsed === true,
     subjects,
     offlineToastShown: s.offlineToastShown === true,
+    dismissedHolidays: parseDates(s.dismissedHolidays, MAX_DISMISSED_HOLIDAYS),
   };
 }
 
@@ -182,6 +196,11 @@ export function updateSubjectPrefs(id: string, patch: SubjectPrefs | null) {
     }
     return { subjects };
   });
+}
+
+/** «Не сейчас» на карточке праздника: больше не предлагать отметить этот день. */
+export function dismissHoliday(date: DateStr) {
+  updateSettings((s) => ({ dismissedHolidays: parseDates([...s.dismissedHolidays, date], MAX_DISMISSED_HOLIDAYS) }));
 }
 
 export function useSettings(): Settings {

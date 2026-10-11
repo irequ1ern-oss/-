@@ -278,3 +278,50 @@
   transform-origin: left center;
   transition: transform 1s linear;
 }
+
+/* ---------- Карточка праздника («Отметить выходным?») ---------- */
+.holiday-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  border-radius: var(--r-group);
+  background: var(--surface);
+  border: var(--border-w) solid var(--border);
+  box-shadow: var(--shadow-card);
+}
+
+.holiday-card__top {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.holiday-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.holiday-card__title {
+  display: flex;
+  flex-direction: column;
+}
+
+.holiday-card__date {
+  color: var(--label-2);
+  font-weight: 600;
+}
+
+/* Две кнопки поровну; на планшете не растягиваются во всю карточку */
+.holiday-card__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.holiday-card__actions .btn {
+  flex: 1 1 0;
+  max-width: 220px;
+}

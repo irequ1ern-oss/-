@@ -1,15 +1,20 @@
-// Примерные данные для превью дизайна: ДЗ, события и одна замена в расписании.
+// Примерные данные для превью дизайна: ДЗ, события, замена в расписании и практика в следующем месяце.
 
-import { activeLessons, findNextLessonOfSubject, resolveDay, type DateOverride, type ScheduleSources } from '../core/schedule';
+import { newPeriod } from '../core/changes';
+import {
+  activeLessons, findNextLessonOfSubject, resolveDay, type DateOverride, type SchedulePeriod, type ScheduleSources,
+  type UserSubject,
+} from '../core/schedule';
 import { addDays, startOfWeek, weekdayIndex, type DateStr } from '../core/time';
 import { mainSchedule } from '../data/schedule';
 import type { AppData, EventItem, HomeworkItem } from '../shell/app';
+import { pickUserSubjectColor, withUserSubjects } from '../state/subjects';
 
 /** Все примерные данные для превью относительно «сегодня» (даты ДЗ и замена — от этого дня). */
 export function demoData(today: DateStr): AppData {
   const src = sampleSources(today);
   return {
-    main: mainSchedule,
+    main: src.main,
     src,
     homework: sampleHomework(today, src),
     events: sampleEvents(today, src),
@@ -17,9 +22,51 @@ export function demoData(today: DateStr): AppData {
   };
 }
 
-/** Расписание превью: основное и одна замена в четверг. */
+/** Изменения расписания для хранилища превью (src/state/changes.ts, в памяти). */
+export interface DemoChanges {
+  periods: SchedulePeriod[];
+  overrides: DateOverride[];
+  subjects: UserSubject[];
+}
+
+export function demoChanges(today: DateStr): DemoChanges {
+  return { periods: [samplePractice(today)], overrides: sampleOverrides(today), subjects: [PRACTICE_SUBJECT] };
+}
+
+/** Расписание превью: основное, замена в четверг и практика (как его собирает AppRoot из хранилища). */
 export function sampleSources(today: DateStr): ScheduleSources {
-  return { main: mainSchedule, periods: [], overrides: sampleOverrides(today) };
+  const changes = demoChanges(today);
+  const main = withUserSubjects(mainSchedule, changes.subjects);
+  return { main, periods: changes.periods, overrides: changes.overrides };
+}
+
+const DEMO_STAMP = '2026-10-09T10:00:00+03:00';
+
+/** Свой предмет «Практика» (такие пользователь добавляет сам). */
+const PRACTICE_SUBJECT: UserSubject = {
+  id: 'demo-practice',
+  short: 'Практика',
+  full: 'Учебная практика',
+  color: pickUserSubjectColor(mainSchedule),
+  icon: 'hammer',
+  createdAt: DEMO_STAMP,
+  updatedAt: DEMO_STAMP,
+};
+
+/** Первый понедельник следующего месяца. */
+function firstMondayOfNextMonth(today: DateStr): DateStr {
+  const [y, m] = today.split('-').map(Number);
+  const first = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  return weekdayIndex(first) === 0 ? first : addDays(startOfWeek(first), 7);
+}
+
+/** Практика на две недели с первого понедельника следующего месяца: каждый будний день одно занятие. */
+function samplePractice(today: DateStr): SchedulePeriod {
+  const from = firstMondayOfNextMonth(today);
+  return newPeriod('practice', from, addDays(from, 11), { id: 'demo-practice-period', now: DEMO_STAMP }, {
+    mainWeek: mainSchedule.week,
+    practice: { subjectId: PRACTICE_SUBJECT.id, start: '09:00', end: '14:40', room: '8', days: ['mon', 'tue', 'wed', 'thu', 'fri'] },
+  });
 }
 
 /** Ближайший будний день не раньше даты — запасной вариант, если пары предмета не нашлось. */
@@ -83,8 +130,8 @@ export function sampleOverrides(today: DateStr): DateOverride[] {
       target: '11:55',
       lesson: { room: '12' },
       note: 'замена кабинета',
-      createdAt: '2026-10-09T10:00:00+03:00',
-      updatedAt: '2026-10-09T10:00:00+03:00',
+      createdAt: DEMO_STAMP,
+      updatedAt: DEMO_STAMP,
     },
   ];
 }

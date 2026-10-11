@@ -1,4 +1,5 @@
 // Экран «Сегодня» (раскладка L2: «Сейчас» крупно).
+// Над главным блоком — плашка изменений дня, под ним — карточка ближайшего праздника («Отметить выходным?»).
 
 import { useContext, useEffect, useMemo, useState } from 'preact/hooks';
 import { computeHero, type DayProgress } from '../../core/hero';
@@ -15,14 +16,17 @@ import { Group, Cell, IconTile } from '../../ui/List';
 import { IconButton } from '../../ui/controls';
 import { Icon } from '../../ui/Icon';
 import { LessonRow } from '../LessonRow';
+import { ChangesBanner } from '../week/ChangesBanner';
 import { Hero } from './Hero';
+import { HolidayCard } from './HolidayCard';
+import { cancelledDayInfo, upcomingHoliday } from './todayLogic';
 import './today.css';
 
 export function TodayView() {
   // Состояние экрана — с точностью до минуты; секунды идут только в таймере главного блока (Hero).
   const clock = useClock('minute');
   const { src, demo } = useAppData();
-  const { name } = useSettings();
+  const { name, dismissedHolidays } = useSettings();
   // ?now=… в адресе: часы идут от заданного момента — честно показываем, что время не настоящее.
   const testTime = useContext(ClockContext).simulated && !demo;
   const layout = useLayout();
@@ -30,6 +34,8 @@ export function TodayView() {
   useWakeAt(state.changesAt, clock.date);
   const { hero, today, progress, upNext } = state;
   const totalToday = activeLessons(today).length;
+  const cancelled = hero.kind === 'dayoff' && hero.reason === 'cancelled' ? cancelledDayInfo(today) : undefined;
+  const holiday = useMemo(() => upcomingHoliday(clock.date, src, dismissedHolidays), [clock.date, src, dismissedHolidays]);
 
   // Под главным блоком: сегодняшний список, а после пар и в выходной — следующий учебный день.
   const nextDay = hero.kind === 'after' || hero.kind === 'dayoff' ? hero.next : null;
@@ -61,10 +67,13 @@ export function TodayView() {
       }
     >
       <div class="today">
-        <Hero hero={hero} today={clock.date} totalToday={totalToday} />
+        {/* Если главный блок уже говорит, почему пар нет (отменили, каникулы), — на плашке только заголовок */}
+        <ChangesBanner day={today} details={!(hero.kind === 'dayoff' && (hero.reason === 'cancelled' || hero.reason === 'holiday'))} />
+        <Hero hero={hero} today={clock.date} totalToday={totalToday} cancelled={cancelled} />
         {progress && <DayProgressBar progress={progress} lessons={activeLessons(today)} kind={hero.kind} />}
         {/* До пар следующая пара уже в главном блоке, а «Далее» со второй парой только путает */}
         {upNext && hero.kind !== 'before' && <UpNext lesson={upNext} nowMinutes={clock.minutes} />}
+        {holiday && <HolidayCard holiday={holiday} today={clock.date} />}
         <DayList title={listTitle} lessons={listDay.lessons} isToday={!nextDay} clockDate={clock.date} clockMinutes={clock.minutes} />
       </div>
     </Screen>

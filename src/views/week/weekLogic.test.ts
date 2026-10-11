@@ -5,7 +5,8 @@ import type { HomeworkItem } from '../../shell/app';
 import { formatWeekRange } from '../../core/format';
 import { weekDays } from '../../core/week';
 import {
-  dayMarks, dayPillLabel, dayTitle, directionTo, formatDayRange, sameWeekdayIn, swipeOutcome, weekCaption, weekOffset, weekTitle,
+  changesBannerText, dayMarks, dayPillLabel, dayTitle, directionTo, formatDayRange, sameWeekdayIn, swipeOutcome, weekCaption,
+  weekOffset, weekTitle,
 } from './weekLogic';
 
 describe('подпись недели', () => {
@@ -117,5 +118,63 @@ describe('решение по свайпу', () => {
 
   it('бросок в обратную сторону отменяет переход', () => {
     expect(swipeOutcome(-150, 0.6, W)).toBe(0);
+  });
+});
+
+describe('плашка изменений дня', () => {
+  const short = (id: string) => ({ mss: 'МСС', pfo: 'ПФО', ig: 'ИГ', prac: 'Практика' })[id] ?? id;
+  const banner = (date: string, extra: Parameters<typeof sources>[0] = {}) => {
+    const src = sources(extra);
+    return changesBannerText(resolveDay(date, src), short, src);
+  };
+
+  it('без изменений плашки нет', () => {
+    expect(banner('2026-10-12')).toBeNull();
+  });
+
+  it('временное расписание: до какого числа и название (название по умолчанию не повторяем)', () => {
+    const practice = period({ from: '2026-10-12', to: '2026-10-25', title: 'Практика', week: {} });
+    expect(banner('2026-10-14', { periods: [practice] })).toEqual({ title: 'Временное расписание до\u00a025.10', subtitle: 'Практика' });
+    const plain = period({ from: '2026-10-12', to: '2026-10-17', title: 'Временное расписание', week: {} });
+    expect(banner('2026-10-14', { periods: [plain] })).toEqual({ title: 'Временное расписание до\u00a017.10' });
+  });
+
+  it('только изменения на дату: что именно изменилось', () => {
+    const cancel = override({ date: '2026-10-12', action: 'cancel', target: '09:00' });
+    expect(banner('2026-10-12', { overrides: [cancel] })).toEqual({
+      title: 'Изменения на этот день',
+      subtitle: 'Отменена пара: МСС, 09:00',
+    });
+    const replace = override({ date: '2026-10-12', action: 'replace', target: '10:50', lesson: { room: '12' } });
+    expect(banner('2026-10-12', { overrides: [cancel, replace] })?.subtitle).toBe(
+      'Отменена пара: МСС, 09:00 · Замена в 10:50: ПФО → каб.\u00a012',
+    );
+  });
+
+  it('«Пар нет весь день» перекрывает изменения до него, но не пары, добавленные после', () => {
+    const cancel = override({ date: '2026-10-12', action: 'cancel', target: '09:00' });
+    const dayOff = override({ date: '2026-10-12', action: 'cancelDay', note: 'Субботник' });
+    expect(banner('2026-10-12', { overrides: [cancel, dayOff] })).toEqual({
+      title: 'Изменения на этот день',
+      subtitle: 'Пар нет весь день: Субботник',
+    });
+    const added = override({ date: '2026-10-12', action: 'add', lesson: { start: '12:00', end: '13:30', subjectId: 'prac', room: '8' } });
+    expect(banner('2026-10-12', { overrides: [cancel, dayOff, added] })?.subtitle).toBe(
+      'Пар нет весь день: Субботник · Добавлена пара: Практика, 12:00–13:30, каб.\u00a08',
+    );
+  });
+
+  it('временное расписание и изменения в один день', () => {
+    const practice = period({
+      from: '2026-10-12',
+      to: '2026-10-25',
+      title: 'Практика',
+      week: { mon: [{ start: '09:00', end: '14:40', subjectId: 'prac', room: '8' }] },
+    });
+    const cancel = override({ date: '2026-10-12', action: 'cancel', target: '09:00' });
+    expect(banner('2026-10-12', { periods: [practice], overrides: [cancel] })).toEqual({
+      title: 'Временное расписание до\u00a025.10',
+      subtitle: 'Практика · Отменена пара: Практика, 09:00',
+    });
   });
 });

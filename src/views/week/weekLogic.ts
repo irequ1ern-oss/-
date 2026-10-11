@@ -1,8 +1,9 @@
 // Логика экрана «Неделя» без интерфейса: подписи, отметки под днями, листание недель, решение по свайпу.
 
+import { describeOverride } from '../../core/changes';
 import { activeLessons, dayHasChanges, type ResolvedDay, type ScheduleSources } from '../../core/schedule';
 import { weekDays } from '../../core/week';
-import { capitalize, formatDayLong, formatDayMonth, lessonsCount, plural } from '../../core/format';
+import { capitalize, formatDayLong, formatDayMonth, formatDDMM, lessonsCount, plural } from '../../core/format';
 import { addDays, diffDays, startOfWeek, weekdayIndex, type DateStr } from '../../core/time';
 import type { HomeworkItem } from '../../shell/app';
 
@@ -55,6 +56,31 @@ export function dayMarks(day: ResolvedDay, homework: HomeworkItem[]): DayMarks {
     changes: dayHasChanges(day),
     homework: homework.filter((h) => !h.done && h.due === day.date).length,
   };
+}
+
+/** Название временного расписания по умолчанию: в подписи плашки его не повторяем. */
+const DEFAULT_PERIOD_TITLE = 'Временное расписание';
+
+export interface BannerText {
+  title: string;
+  subtitle?: string;
+}
+
+/**
+ * Плашка изменений дня: «Временное расписание до 17.10» (под ним — название и изменения на дату)
+ * или «Изменения на этот день» (под ним — что изменилось). Нет изменений — null.
+ * «Пар нет весь день» перекрывает отмены и замены до него — тогда пишем его и пары, добавленные после.
+ */
+export function changesBannerText(day: ResolvedDay, subjectName: (id: string) => string, src: ScheduleSources): BannerText | null {
+  if (!dayHasChanges(day)) return null;
+  const dayOffAt = day.overrides.map((o) => o.action).lastIndexOf('cancelDay');
+  const shown = dayOffAt === -1 ? day.overrides : [day.overrides[dayOffAt], ...day.overrides.slice(dayOffAt + 1).filter((o) => o.action === 'add')];
+  const about = shown.map((o) => describeOverride(o, subjectName, src)).join(' · ');
+  if (!day.period) return { title: 'Изменения на этот день', subtitle: about || undefined };
+  const title = day.period.title.trim();
+  const subtitle = [title !== DEFAULT_PERIOD_TITLE ? title : '', about].filter(Boolean).join(' · ');
+  // «до 17.10» не разрывается: на узком экране переносится вся эта часть.
+  return { title: `Временное расписание до\u00a0${formatDDMM(day.period.to)}`, subtitle: subtitle || undefined };
 }
 
 /** Подпись дня для экранного диктора: «Четверг, 15 октября, 5 пар, есть изменения». */

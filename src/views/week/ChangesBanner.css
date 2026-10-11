@@ -1,0 +1,42 @@
+/*
+ * Плашка изменений дня. Оттенок --warning на непрозрачной карточке, а не на фоне экрана:
+ * так текст --warning проходит AA (4.5:1) и в светлой теме (проверяет tokens.test.ts).
+ */
+.changes-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-min);
+  margin-bottom: var(--space-3);
+  padding: 10px var(--space-3) 10px var(--space-4);
+  border-radius: var(--r-group);
+  background: color-mix(in srgb, var(--warning) 16%, var(--surface));
+  color: var(--warning);
+  text-align: left;
+}
+
+.changes-banner__icon,
+.changes-banner__chevron {
+  flex: none;
+}
+
+.changes-banner__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.changes-banner__title {
+  font-weight: 600;
+}
+
+/* Что изменилось — не больше двух строк, подробности в правке дня */
+.changes-banner__sub {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}

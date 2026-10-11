@@ -1,5 +1,5 @@
 // Строка пары в списке: иконка предмета, сокращение, время, кабинет.
-// Нажатие — карточка предмета, долгое нажатие — контекстное меню.
+// Нажатие — карточка предмета, долгое нажатие — контекстное меню (о предмете, отменить/вернуть, заменить, изменить день).
 
 import { Fragment } from 'preact';
 import type { ResolvedLesson } from '../core/schedule';
@@ -12,6 +12,7 @@ import { Cell } from '../ui/List';
 import { SubjectIcon } from '../ui/SubjectIcon';
 import { useLongPress } from '../ui/gestures';
 import { openContextMenu, type MenuItem } from '../ui/overlays';
+import { cancelLessonQuick, openDayEditor, openLessonEditor } from './changes/api';
 import './LessonRow.css';
 
 interface Props {
@@ -27,7 +28,25 @@ const STATUS: Partial<Record<ResolvedLesson['status'], string>> = {
   added: 'добавлена',
 };
 
-export function LessonRow({ lesson, phase = 'upcoming', extra }: Props) {
+/** Пункты меню пары — только то, что уже работает (ДЗ и заметки к паре появятся на этапе 3). */
+export function lessonMenuItems(lesson: ResolvedLesson, openSubject: (id: string) => void): MenuItem[] {
+  const items: MenuItem[] = [{ label: 'О предмете', icon: 'info', onSelect: () => openSubject(lesson.subjectId) }];
+  if (lesson.status === 'cancelled') {
+    items.push({ label: 'Вернуть пару', icon: 'arrow-u-up-left', onSelect: () => cancelLessonQuick(lesson.date, lesson) });
+  } else {
+    // Отменённую пару заменить нельзя: замена ищет неотменённую пару с тем же началом.
+    items.push(
+      { label: 'Отменить пару', icon: 'x-circle', onSelect: () => cancelLessonQuick(lesson.date, lesson) },
+      { label: 'Заменить…', icon: 'swap', onSelect: () => openLessonEditor({ date: lesson.date, lesson }) },
+    );
+  }
+  items.push({ label: 'Изменить день', icon: 'pencil-simple', onSelect: () => openDayEditor(lesson.date) });
+  return items;
+}
+
+export function LessonRow({ lesson, phase: rawPhase = 'upcoming', extra }: Props) {
+  // Отменённая пара не «идёт сейчас»: не подсвечиваем её как текущую.
+  const phase = lesson.status === 'cancelled' && rawPhase === 'current' ? 'upcoming' : rawPhase;
   const subject = useSubject(lesson.subjectId);
   const { subgroup } = useSettings();
   const { openSubject } = useActions();
@@ -70,8 +89,6 @@ export function LessonRow({ lesson, phase = 'upcoming', extra }: Props) {
     />
   );
 
-  const items: MenuItem[] = [{ label: 'О предмете', icon: 'info', onSelect: () => openSubject(lesson.subjectId) }];
-
   const press = useLongPress({
     onPress: () => openSubject(lesson.subjectId),
     onLongPress: (el) => {
@@ -80,7 +97,7 @@ export function LessonRow({ lesson, phase = 'upcoming', extra }: Props) {
       openContextMenu({
         rect: { top: r.top, left: r.left, width: r.width, height: r.height },
         preview: () => <div class="lesson-row-preview">{row(false)}</div>,
-        items,
+        items: lessonMenuItems(lesson, openSubject),
       });
     },
   });

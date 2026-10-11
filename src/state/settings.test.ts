@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS, getSettings, initSettings, parseSettings, resolveTheme, updateSettings, updateSubjectPrefs } from './settings';
+import {
+  DEFAULT_SETTINGS, dismissHoliday, getSettings, initSettings, parseSettings, resolveTheme, updateSettings, updateSubjectPrefs,
+} from './settings';
 
 describe('настройки', () => {
   it('по умолчанию: Влад, авто-тема, 1-я подгруппа, вибрация включена', () => {
@@ -17,6 +19,19 @@ describe('настройки', () => {
     expect(s.subgroup).toBe(2);
     expect(s.theme).toBe('amoled');
     expect(s.subjects.mss).toEqual({ color: 'teal', icon: 'ruler', short: 'Метр', teacher: 'Иванова И. И.' });
+  });
+
+  it('отклонённые праздники: только настоящие даты, без повторов, не больше 50', () => {
+    expect(parseSettings({}).dismissedHolidays).toEqual([]);
+    expect(parseSettings({ dismissedHolidays: 'вчера' }).dismissedHolidays).toEqual([]);
+    const s = parseSettings({ dismissedHolidays: ['2026-11-04', 42, '2026-02-30', '2026-11-04', '04.11.2026', '2026-05-01'] });
+    expect(s.dismissedHolidays).toEqual(['2026-05-01', '2026-11-04']);
+    const many = Array.from({ length: 60 }, (_, i) => `2026-01-${String((i % 28) + 1).padStart(2, '0')}`)
+      .concat(Array.from({ length: 30 }, (_, i) => `2027-03-${String(i + 1).padStart(2, '0')}`));
+    const kept = parseSettings({ dismissedHolidays: many }).dismissedHolidays;
+    expect(kept).toHaveLength(50);
+    expect(kept.at(-1)).toBe('2027-03-30'); // самые поздние остаются
+    expect(new Set(kept).size).toBe(50);
   });
 
   it('тема «Авто» следует системе', () => {
@@ -82,6 +97,20 @@ describe('настройки', () => {
       store.set('test.gallery', JSON.stringify({ ...getSettings(), theme: 'light', subgroup: 2 }));
       updateSettings({ haptics: false });
       expect(getSettings()).toMatchObject({ theme: 'dark', subgroup: 2, haptics: false });
+    } finally {
+      dropStorage();
+    }
+  });
+
+  it('«Не сейчас» запоминает праздник', () => {
+    const store = fakeStorage();
+    try {
+      initSettings('test.holidays');
+      dismissHoliday('2026-11-04');
+      dismissHoliday('2026-11-04');
+      dismissHoliday('2026-05-01');
+      expect(getSettings().dismissedHolidays).toEqual(['2026-05-01', '2026-11-04']);
+      expect(JSON.parse(store.get('test.holidays')!).dismissedHolidays).toEqual(['2026-05-01', '2026-11-04']);
     } finally {
       dropStorage();
     }

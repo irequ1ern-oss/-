@@ -13,6 +13,7 @@ import { Icon } from '../../ui/Icon';
 import { ProgressRing } from '../../ui/ProgressRing';
 import { SubjectIcon } from '../../ui/SubjectIcon';
 import type { IconName } from '../../ui/iconData';
+import type { CancelledDay } from './todayLogic';
 
 /** «Иди в каб. 21» / «Иди в спортзал». Строка может перенестись только перед кабинетом (остальное — неразрывные пробелы). */
 export function goToRoomText(room: string | undefined): string {
@@ -174,7 +175,15 @@ function RestHero({ icon, title, text, next, today }: { icon: IconName; title: s
   );
 }
 
-function HeroBody({ hero, today, totalToday }: { hero: HeroState; today: string; totalToday: number }) {
+interface HeroProps {
+  hero: HeroState;
+  today: string;
+  totalToday: number;
+  /** Все пары сегодня отменены: причина («День народного единства») и праздник ли это. */
+  cancelled?: CancelledDay;
+}
+
+function HeroBody({ hero, today, totalToday, cancelled }: HeroProps) {
   switch (hero.kind) {
     case 'lesson':
       return <LessonHero hero={hero} />;
@@ -187,12 +196,16 @@ function HeroBody({ hero, today, totalToday }: { hero: HeroState; today: string;
         <RestHero icon="moon-stars" title="На сегодня всё" text={`${capitalize(lessonsCount(totalToday))} позади`} next={hero.next} today={today} />
       );
     case 'dayoff': {
-      const texts = {
+      const texts: Record<typeof hero.reason, { icon: IconName; title: string; text?: string }> = {
         weekend: { icon: 'sun', title: 'Выходной', text: 'Можно отдохнуть' },
         holiday: { icon: 'confetti', title: hero.period?.title ?? 'Каникулы', text: hero.period ? `до ${formatDayLong(hero.period.to)}` : undefined },
-        cancelled: { icon: 'calendar-x', title: 'Пары отменены', text: 'Сегодня все пары отменили' },
+        cancelled: {
+          icon: cancelled?.holiday ? 'confetti' : 'calendar-x',
+          title: 'Пар нет',
+          text: cancelled?.note ?? 'Все пары отменили',
+        },
         free: { icon: 'coffee', title: 'Сегодня пар нет', text: undefined },
-      } as const;
+      };
       const t = texts[hero.reason];
       return <RestHero icon={t.icon} title={t.title} text={t.text} next={hero.next} today={today} />;
     }
@@ -203,7 +216,7 @@ function HeroBody({ hero, today, totalToday }: { hero: HeroState; today: string;
  * Главный блок. Обёртка — контейнер для @container в today.css: раскладка зависит от ширины,
  * которая досталась блоку (узкий телефон, планшет, карточка в галерее), а не от ширины окна.
  */
-export function Hero(props: { hero: HeroState; today: string; totalToday: number }) {
+export function Hero(props: HeroProps) {
   return (
     <div class="hero-box">
       <HeroBody {...props} />

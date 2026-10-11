@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { forDayLabel, formatDuration, formatRoom, formatTimer, formatWeekRange, greeting, lessonsCount } from './format';
+import { forDayLabel, formatDateRange, formatDuration, formatRoom, formatTimer, formatWeekRange, greeting, lessonsCount } from './format';
 
 describe('подписи', () => {
   it('кабинет (номер не отрывается от «каб.»)', () => {
@@ -45,5 +45,15 @@ describe('подписи', () => {
     expect(formatWeekRange('2026-10-05')).toBe('5–9 октября');
     expect(formatWeekRange('2026-09-28')).toBe('28 сентября – 2 октября');
     expect([1, 2, 5, 11, 21].map(lessonsCount)).toEqual(['1 пара', '2 пары', '5 пар', '11 пар', '21 пара']);
+  });
+
+  it('промежуток дат', () => {
+    expect(formatDateRange('2026-10-19', '2026-10-31')).toBe('19–31 октября');
+    expect(formatDateRange('2026-10-28', '2026-11-03')).toBe('28 октября – 3 ноября');
+    expect(formatDateRange('2026-11-05', '2026-11-05')).toBe('5 ноября');
+    expect(formatDateRange('2026-12-28', '2027-01-10')).toBe('28 декабря – 10 января');
+    expect(formatDateRange('2026-10-05', '2027-10-05')).toBe('5 октября 2026 – 5 октября 2027');
+    expect(formatDateRange('2026-10-05', '2027-10-01')).toBe('5 октября – 1 октября');
+    expect(formatWeekRange('2026-12-28')).toBe('28 декабря – 1 января');
   });
 });

@@ -15,7 +15,7 @@ const UI = [
   'arrows-clockwise', 'swap', 'flame', 'moon-stars', 'sun', 'sparkle', 'users', 'chalkboard-teacher', 'tray',
   'calendar-plus', 'arrow-right', 'confetti', 'wifi-slash', 'cloud-check', 'shield', 'git-branch', 'book-bookmark',
   'pencil-simple', 'clock-countdown', 'bell', 'paint-brush', 'arrow-u-up-left', 'hand-tap', 'flag',
-  'arrow-square-out', 'check-fat',
+  'arrow-square-out', 'check-fat', 'x-circle',
 ];
 
 /** Иконки предметов (можно выбрать в настройках). */
