@@ -10,7 +10,7 @@ import { showToast } from '../../ui/overlays';
 import { openChangeChooser } from './Chooser';
 import { openDaySheet } from './DayEditor';
 import { openLessonSheet } from './LessonEditor';
-import { planToggleCancel } from './logic';
+import { findTraced, planRevert, planToggleCancel, traceDay } from './logic';
 import { applyPlan, notifyChange as notify } from './notify';
 
 /**
@@ -40,6 +40,15 @@ export function openLessonEditor(opts: { date: DateStr; lesson?: ResolvedLesson 
 /** Отменить пару на дату (или вернуть, если она уже отменена изменением; добавленную — удалить). */
 export function cancelLessonQuick(date: DateStr, lesson: ResolvedLesson): void {
   const plan = planToggleCancel(date, lesson, currentSources(), newStamp);
+  if (plan) applyPlan(plan);
+  else showToast({ text: 'Не получилось — расписание уже поменялось', icon: 'info' });
+}
+
+/** Убрать замены пары на дату — она снова как по расписанию («Вернуть как было»). */
+export function revertLessonQuick(date: DateStr, lesson: ResolvedLesson): void {
+  const day = traceDay(date, currentSources());
+  const t = findTraced(day, lesson);
+  const plan = t ? planRevert(t, day) : null;
   if (plan) applyPlan(plan);
   else showToast({ text: 'Не получилось — расписание уже поменялось', icon: 'info' });
 }
