@@ -46,7 +46,7 @@ describe('свои предметы', () => {
     expect(Object.fromEntries(testMain.subjects.map((s) => [s.id, subjectDefaults(s.id, manual).color]))).toEqual(plain);
   });
 
-  it('цвет нового предмета — свободный из автопалитры, иначе индиго', () => {
+  it('цвет нового предмета — свободный из автопалитры, иначе самый редкий', () => {
     // В тестовом расписании четыре предмета: свободные цвета остаются.
     const used = new Set(testMain.subjects.map((s) => subjectDefaults(s.id, testMain).color));
     const color = pickUserSubjectColor(testMain);
@@ -55,9 +55,11 @@ describe('свои предметы', () => {
     // Свой предмет уже занял этот цвет — следующий получит другой.
     const merged = withUserSubjects(testMain, [userSubject('u1', { color })]);
     expect(pickUserSubjectColor(merged)).not.toBe(color);
-    // Все цвета автопалитры заняты — индиго.
+    // Все цвета автопалитры заняты — самый редкий (тот, что носит меньше всего предметов).
     const full = withUserSubjects(testMain, AUTO_COLORS.map((c) => userSubject(`u-${c}`, { color: c })));
-    expect(pickUserSubjectColor(full)).toBe('indigo');
+    const counts = new Map(AUTO_COLORS.map((c) => [c, full.subjects.filter((s) => subjectDefaults(s.id, full).color === c).length]));
+    const picked = pickUserSubjectColor(full);
+    expect(counts.get(picked)).toBe(Math.min(...counts.values()));
     // Настоящее расписание: цвет, которого нет ни у одного предмета.
     const real = pickUserSubjectColor(mainSchedule);
     expect(mainSchedule.subjects.map((s) => subjectDefaults(s.id, mainSchedule).color)).not.toContain(real);

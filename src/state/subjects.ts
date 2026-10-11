@@ -54,9 +54,16 @@ export function withUserSubjects(main: MainSchedule, subjects: UserSubject[]): M
 
 /** Цвет для нового своего предмета: из автопалитры, которого ещё нет у предметов, если такой остался. */
 export function pickUserSubjectColor(main: MainSchedule): SubjectColor {
-  const used = new Set<SubjectColor>(Object.values(autoColors(main)));
-  for (const s of main.subjects) if (isSubjectColor(s.color)) used.add(s.color);
-  return AUTO_COLORS.find((c) => !used.has(c)) ?? 'indigo';
+  // Сколько предметов уже носят каждый цвет; берём самый редкий (при равенстве — по порядку палитры).
+  const count = new Map<SubjectColor, number>(AUTO_COLORS.map((c) => [c, 0]));
+  const auto = autoColors(main);
+  for (const s of main.subjects) {
+    const c = isSubjectColor(s.color) ? s.color : auto[s.id];
+    if (c && count.has(c)) count.set(c, count.get(c)! + 1);
+  }
+  let best: SubjectColor = AUTO_COLORS[0];
+  for (const c of AUTO_COLORS) if (count.get(c)! < count.get(best)!) best = c;
+  return best;
 }
 
 export function subjectView(id: string, main: MainSchedule, settings: Settings): SubjectView {
