@@ -23,3 +23,17 @@
   color: var(--danger);
   font-weight: 500;
 }
+
+.upcoming__empty { display: grid; justify-items: start; gap: var(--space-2); }
+.aside-bells { margin-top: var(--space-6); }
+.aside-bells h3 { margin-bottom: var(--space-2); }
+.aside-bells__row {
+  display: grid;
+  grid-template-columns: .8fr 1fr 1fr;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--separator);
+  font-size: var(--fs-footnote);
+  color: var(--label-2);
+}
+.aside-bells__row strong { color: var(--label); }

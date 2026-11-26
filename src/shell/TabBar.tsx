@@ -51,7 +51,7 @@ export function TabBar({ active, homeworkCount, onPlus }: Props) {
           );
         })}
       </div>
-      <button class="tabbar__plus pressable" aria-label="Создать: ДЗ, заметку или изменение расписания" onClick={onPlus}>
+      <button class="tabbar__plus pressable" aria-label="Создать ДЗ или заметку" onClick={onPlus}>
         <Icon name="plus" size={28} weight="regular" />
       </button>
     </nav>

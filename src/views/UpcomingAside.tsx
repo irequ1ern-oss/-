@@ -2,8 +2,10 @@
 
 import { useAppData, useActions, useSubject, type EventItem } from '../shell/app';
 import { useClock } from '../shell/clock';
-import { navigate } from '../shell/nav';
-import { Cell, EmptyState, Group, IconTile } from '../ui/List';
+import { openStudyEditor } from './StudyEditor';
+import { BELL_PAIRS } from '../core/bells';
+import { Button } from '../ui/controls';
+import { Cell, Group, IconTile } from '../ui/List';
 import { SubjectIcon } from '../ui/SubjectIcon';
 import type { IconName } from '../ui/iconData';
 import { dueLabel, eventDateLabel, isOverdue, upcomingEvents, upcomingHomework } from './homework/homeworkLogic';
@@ -39,12 +41,10 @@ export function UpcomingAside({ hideHomework = false }: Props) {
     <div class="aside-panel upcoming">
       <h2 class="t-title2">Ближайшее</h2>
       {homework.length === 0 && soon.length === 0 ? (
-        <EmptyState
-          icon="tray"
-          title="Пока пусто"
-          // До этапа 3 ДЗ и событий в приложении нет совсем — говорим, когда они появятся.
-          text={items.length === 0 && events.length === 0 ? 'ДЗ и события появятся на этапе 3' : 'Здесь появятся ДЗ и события на ближайшие дни'}
-        />
+        <div class="upcoming__empty">
+          <p class="t-subhead t-secondary">{hideHomework ? 'Ближайших событий нет' : 'Ближайших сроков нет'}</p>
+          {!hideHomework && <Button variant="plain" size="sm" icon="plus" onClick={() => openStudyEditor({ kind: 'homework' })}>Записать ДЗ</Button>}
+        </div>
       ) : (
         <>
           {homework.length > 0 && (
@@ -63,8 +63,27 @@ export function UpcomingAside({ hideHomework = false }: Props) {
           )}
         </>
       )}
+      <section class="aside-bells">
+        <h3 class="t-headline">Звонки</h3>
+        {BELL_PAIRS.map(p => (
+          <div class="aside-bells__row tabular" key={p.number}>
+            <strong>{p.number} пара</strong><span>{p.start}–{p.pause}</span><span>{p.resume}–{p.end}</span>
+          </div>
+        ))}
+      </section>
     </div>
   );
+}
+
+/** Ближайшие незакрытые сроки под таймером. Остальные доступны на вкладке ДЗ. */
+export function DueSoon() {
+  const [items] = useHomework();
+  const today = useClock('minute').date;
+  const due = upcomingHomework(items, today, 1);
+  if (!due.length) return null;
+  return <Group header="Сдать в первую очередь">
+    {due.slice(0, 3).map(h => <HomeworkLine key={h.id} item={h} today={today} />)}
+  </Group>;
 }
 
 function HomeworkLine({ item, today }: { item: TrackedHomework; today: string }) {
@@ -82,7 +101,7 @@ function HomeworkLine({ item, today }: { item: TrackedHomework; today: string })
         </span>
       }
       label={`${subject.full}: ${item.title}, ${overdue ? 'срок прошёл, ' : 'срок '}${due}`}
-      onClick={() => navigate({ tab: 'homework', path: [] })}
+      onClick={() => openStudyEditor({ kind: 'homework', item })}
     />
   );
 }

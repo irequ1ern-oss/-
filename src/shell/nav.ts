@@ -23,6 +23,7 @@ export function parseHash(hash: string): Route {
     }
   }
   const tab = TABS.includes(parts[0] as TabId) ? (parts[0] as TabId) : 'today';
+  if (tab === 'today' && parts[1] === 'timer') return { tab, path: ['timer'] };
   return { tab, path: tab === 'settings' ? parts.slice(1, 3) : [] };
 }
 

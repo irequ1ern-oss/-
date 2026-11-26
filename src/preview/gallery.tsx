@@ -1,3 +1,4 @@
+import { groupPairs } from '../core/bells';
 // Страница превью дизайна (preview/index.html): приложение в рамках телефона и планшета,
 // главный блок «Сегодня» во всех состояниях, цвета предметов и элементы дизайн-системы.
 // Экраны не повторяем — показываем настоящее демо-приложение (preview/app.html) во фреймах.
@@ -311,7 +312,7 @@ function HeroCard({ name }: { name: PresetName }) {
         </span>
         <span class="t-footnote t-secondary">{HERO_NOTES[name]}</span>
       </figcaption>
-      <Hero hero={hero} today={clock.date} totalToday={activeLessons(today).length} />
+      <Hero hero={hero} today={clock.date} totalToday={groupPairs(activeLessons(today)).length} />
     </figure>
   );
 }

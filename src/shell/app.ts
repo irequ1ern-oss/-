@@ -7,7 +7,7 @@ import type { DateStr } from '../core/time';
 import { useSettings } from '../state/settings';
 import { subjectView, type SubjectView } from '../state/subjects';
 
-/** ДЗ (появятся на этапе 3; сейчас — только примеры в превью). */
+/** Задание по предмету с датой сдачи. */
 export interface HomeworkItem {
   id: string;
   subjectId: string;

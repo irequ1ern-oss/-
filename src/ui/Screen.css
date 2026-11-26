@@ -158,3 +158,18 @@
   flex-direction: column;
   justify-content: center;
 }
+
+/* Карточки слегка поднимаются только при входе снизу в область прокрутки. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    :is(.pair-block, .note-preview, .hw-group, .aside-bells) {
+      animation: feed-enter linear both;
+      animation-timeline: view(block);
+      animation-range: entry 0% entry 85%;
+    }
+    @keyframes feed-enter {
+      from { opacity: .62; transform: translateY(9px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  }
+}

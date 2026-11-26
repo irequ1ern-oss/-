@@ -13,6 +13,7 @@ import { Cell, Group } from '../ui/List';
 import { SubjectIcon } from '../ui/SubjectIcon';
 import { TextField } from '../ui/controls';
 import { closeSheet } from '../ui/overlays';
+import { StudyActions } from './StudyEditor';
 import './SubjectCard.css';
 
 export function SubjectCard({ id, inSheet = true }: { id: string; inSheet?: boolean }) {
@@ -41,6 +42,7 @@ export function SubjectCard({ id, inSheet = true }: { id: string; inSheet?: bool
         </span>
       </div>
 
+      <StudyActions subjectId={id} />
       <Group>
         <Cell title="Кабинет" value={room || 'Не указан'} />
         {hasSubgroups && <Cell title="Подгруппа" value={`${settings.subgroup}-я`} />}

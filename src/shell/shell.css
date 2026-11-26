@@ -402,3 +402,27 @@
 .shell__aside .empty-state {
   box-shadow: none;
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  .anim-tab-forward { --entry-x: 14px; }
+  .anim-tab-back { --entry-x: -14px; }
+  :is(.anim-tab-forward, .anim-tab-back) :is(.screen__body, .screen__head) {
+    animation: tab-enter var(--dur-2) var(--ease-out) both;
+  }
+  @keyframes tab-enter { from { opacity: .35; transform: translateX(var(--entry-x)); } }
+}
+
+@media (min-width: 1440px) {
+  .shell--wide {
+    max-width: 2080px;
+    margin-inline: auto;
+    --panel-inset: clamp(16px, 1.4vw, 32px);
+    --gutter: 24px;
+  }
+  .shell--wide .screen--today { --content-max: 1380px; }
+  .shell--wide .shell__aside {
+    bottom: auto;
+    max-height: calc(100% - 2 * var(--panel-inset) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    border: 1px solid var(--separator);
+  }
+}

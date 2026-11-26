@@ -15,7 +15,7 @@ import { setupPwa } from './pwa';
 
 initSettings();
 
-// ДЗ и события появятся на этапе 3 — пока списки пустые (экран «ДЗ» показывает заглушку).
+// Дневник пользователя загружается с устройства после запуска.
 const data: AppData = { main: mainSchedule, src: scheduleSources, homework: [], events: [], demo: false };
 
 render(<AppShell data={data} clock={clockFromUrl()} />, document.getElementById('app')!);

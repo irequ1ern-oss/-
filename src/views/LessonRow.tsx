@@ -19,6 +19,8 @@ interface Props {
   phase?: LessonPhase;
   /** Дополнение к времени: «через 33 мин». */
   extra?: string;
+  detail?: string;
+  onBreak?: boolean;
 }
 
 const STATUS: Partial<Record<ResolvedLesson['status'], string>> = {
@@ -27,7 +29,7 @@ const STATUS: Partial<Record<ResolvedLesson['status'], string>> = {
   added: 'добавлена',
 };
 
-export function LessonRow({ lesson, phase = 'upcoming', extra }: Props) {
+export function LessonRow({ lesson, phase = 'upcoming', extra, detail, onBreak }: Props) {
   const subject = useSubject(lesson.subjectId);
   const { subgroup } = useSettings();
   const { openSubject } = useActions();
@@ -35,7 +37,8 @@ export function LessonRow({ lesson, phase = 'upcoming', extra }: Props) {
   const status = STATUS[lesson.status];
   const time = `${lesson.start}–${lesson.end}`;
   // Части подписи не разрываются внутри («через 37 мин», «идёт сейчас») — перенос только между ними.
-  const parts = [time, phase === 'current' ? 'идёт сейчас' : extra].filter((p): p is string => Boolean(p));
+  const current = phase === 'current' && lesson.status !== 'cancelled';
+  const parts = [detail ?? time, current && !onBreak ? 'идёт урок' : extra].filter((p): p is string => Boolean(p));
   const subtitle = (
     <span class="tabular">
       {parts.map((p, i) => (
@@ -62,7 +65,7 @@ export function LessonRow({ lesson, phase = 'upcoming', extra }: Props) {
       }
       subtitle={subtitle}
       value={room || undefined}
-      highlight={phase === 'current'}
+      highlight={current && !onBreak}
       dimmed={phase === 'past'}
       label={interactive ? `${subject.full}, ${time}${room ? `, ${room}` : ''}${status ? `, ${status}` : ''}${lesson.note ? `, ${lesson.note}` : ''}` : undefined}
       {...(interactive ? press : {})}
