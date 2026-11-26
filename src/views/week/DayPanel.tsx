@@ -9,6 +9,7 @@ import { navigate } from '../../shell/nav';
 import { Cell, EmptyState, Group } from '../../ui/List';
 import { Icon } from '../../ui/Icon';
 import { SubjectIcon } from '../../ui/SubjectIcon';
+import { MondayTalk } from '../MondayTalk';
 import { LessonRow } from '../LessonRow';
 import { dayTitle } from './weekLogic';
 
@@ -44,6 +45,7 @@ export function DayPanel({ day, clock, homework }: Props) {
         <EmptyState icon="coffee" title="Пар нет" text={day.period?.title} />
       ) : (
         <Group>
+          <MondayTalk date={day.date} />
           {day.lessons.map((l, i) => (
             <LessonRow key={`${l.start}-${i}`} lesson={l} phase={lessonPhase(l, clock)} />
           ))}

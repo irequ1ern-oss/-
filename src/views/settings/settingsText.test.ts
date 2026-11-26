@@ -32,7 +32,7 @@ describe('подписи настроек', () => {
   });
 
   it('предметы с разными кабинетами по подгруппам — из расписания', () => {
-    expect(subjectsWithSubgroupRooms(mainSchedule)).toEqual(['ig', 'pe', 'lang']);
+    expect(subjectsWithSubgroupRooms(mainSchedule)).toEqual(['ig', 'lang']);
     const same: MainSchedule = {
       version: 1,
       subjects: [{ id: 'a', short: 'А', full: 'А' }],

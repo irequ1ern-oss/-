@@ -46,3 +46,22 @@
 .lesson-row-preview .cell__row {
   height: 100%;
 }
+
+.lesson-row .cell__row {
+  min-height: 64px;
+}
+
+.lesson-row .cell__text {
+  gap: var(--space-1);
+}
+
+.lesson-row .cell__value {
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 3px var(--space-2);
+  font-size: var(--fs-footnote);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--label);
+  background: var(--surface-2);
+}

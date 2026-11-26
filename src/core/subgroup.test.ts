@@ -14,9 +14,9 @@ describe('кабинеты по подгруппам', () => {
     expect(lessonRoom(fri.find((l) => l.subjectId === 'lang')!, 1)).toBe('21');
   });
 
-  it('2-я подгруппа: ИГ — 25, Физра — 3, Ин. яз — 23', () => {
+  it('2-я подгруппа: ИГ — 25, Физра — Спортзал, Ин. яз — 23', () => {
     expect(lessonRoom(thu[0], 2)).toBe('25');
-    expect(lessonRoom(thu.find((l) => l.subjectId === 'pe')!, 2)).toBe('3');
+    expect(lessonRoom(thu.find((l) => l.subjectId === 'pe')!, 2)).toBe('Спортзал');
     expect(lessonRoom(fri.find((l) => l.subjectId === 'lang')!, 2)).toBe('23');
   });
 

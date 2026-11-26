@@ -36,6 +36,10 @@
   display: grid;
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
   gap: var(--space-2);
+  padding: var(--space-1);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--surface);
   margin-bottom: var(--space-4);
 }
 
@@ -63,9 +67,7 @@
   min-height: 60px;
   padding: var(--space-2) 2px;
   border-radius: var(--r-group);
-  background: var(--surface);
-  border: var(--border-w) solid var(--border);
-  box-shadow: var(--shadow-card);
+  background: transparent;
 }
 
 .day-pill__wd {
@@ -89,11 +91,18 @@
 }
 
 .day-pill.is-selected .day-pill__box {
-  background: var(--accent-fill);
+  background: linear-gradient(150deg, var(--accent-fill), color-mix(in srgb, var(--accent-fill) 82%, black));
   border-color: transparent;
   box-shadow: none;
 }
 
+.day-pill__end {
+  color: var(--label-2);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-caption);
+}
+
+.day-pill.is-selected .day-pill__end,
 .day-pill.is-selected .day-pill__wd,
 .day-pill.is-selected .day-pill__num {
   color: var(--on-accent);

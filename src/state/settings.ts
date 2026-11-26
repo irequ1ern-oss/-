@@ -16,6 +16,7 @@ export interface SubjectPrefs {
 }
 
 export interface Settings {
+  talkDates: string[];
   /** Имя для приветствия. */
   name: string;
   theme: ThemeChoice;
@@ -29,6 +30,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  talkDates: [],
   name: 'Влад',
   theme: 'auto',
   subgroup: 1,
@@ -63,6 +65,7 @@ export function parseSettings(raw: unknown): Settings {
     }
   }
   return {
+    talkDates: Array.isArray(s.talkDates) ? s.talkDates.filter((d): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) : [],
     name: cleanText(s.name, 40) ?? DEFAULT_SETTINGS.name,
     theme: THEMES.includes(s.theme as ThemeChoice) ? (s.theme as ThemeChoice) : DEFAULT_SETTINGS.theme,
     subgroup: s.subgroup === 2 ? 2 : 1,
