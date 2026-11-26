@@ -15,6 +15,7 @@ import { Group, Cell, IconTile } from '../../ui/List';
 import { IconButton } from '../../ui/controls';
 import { Icon } from '../../ui/Icon';
 import { LessonRow } from '../LessonRow';
+import { MondayTalk, TalkHero, talkEndSecond } from '../MondayTalk';
 import { Hero } from './Hero';
 import './today.css';
 
@@ -22,12 +23,13 @@ export function TodayView() {
   // Состояние экрана — с точностью до минуты; секунды идут только в таймере главного блока (Hero).
   const clock = useClock('minute');
   const { src, demo } = useAppData();
-  const { name } = useSettings();
+  const { name, talkDates } = useSettings();
   // ?now=… в адресе: часы идут от заданного момента — честно показываем, что время не настоящее.
   const testTime = useContext(ClockContext).simulated && !demo;
   const layout = useLayout();
   const state = useMemo(() => computeHero(clock, src), [clock, src]);
-  useWakeAt(state.changesAt, clock.date);
+  const showTalk = state.hero.kind === 'before' && talkDates.includes(clock.date) && clock.seconds < talkEndSecond;
+  useWakeAt(showTalk ? talkEndSecond : state.changesAt, clock.date);
   const { hero, today, progress, upNext } = state;
   const totalToday = activeLessons(today).length;
 
@@ -61,11 +63,11 @@ export function TodayView() {
       }
     >
       <div class="today">
-        <Hero hero={hero} today={clock.date} totalToday={totalToday} />
+        {showTalk ? <TalkHero /> : <Hero hero={hero} today={clock.date} totalToday={totalToday} />}
         {progress && <DayProgressBar progress={progress} lessons={activeLessons(today)} kind={hero.kind} />}
         {/* До пар следующая пара уже в главном блоке, а «Далее» со второй парой только путает */}
         {upNext && hero.kind !== 'before' && <UpNext lesson={upNext} nowMinutes={clock.minutes} />}
-        <DayList title={listTitle} lessons={listDay.lessons} isToday={!nextDay} clockDate={clock.date} clockMinutes={clock.minutes} />
+        <DayList date={listDay.date} title={listTitle} lessons={listDay.lessons} isToday={!nextDay} clockDate={clock.date} clockMinutes={clock.minutes} />
       </div>
     </Screen>
   );
@@ -135,6 +137,7 @@ function UpNext({ lesson, nowMinutes }: { lesson: ResolvedLesson; nowMinutes: nu
 }
 
 interface DayListProps {
+  date: string;
   title: string;
   lessons: ResolvedLesson[];
   isToday: boolean;
@@ -143,7 +146,7 @@ interface DayListProps {
 }
 
 /** Весь день компактным списком. Прошедшие пары свёрнуты в одну строку, чтобы не занимать экран. */
-function DayList({ title, lessons, isToday, clockDate, clockMinutes }: DayListProps) {
+function DayList({ date, title, lessons, isToday, clockDate, clockMinutes }: DayListProps) {
   const [showPast, setShowPast] = useState(false);
   const clock = { date: clockDate, minutes: clockMinutes, seconds: clockMinutes * 60 };
   const phases = lessons.map((l) => (isToday ? lessonPhase(l, clock) : 'upcoming'));
@@ -154,6 +157,7 @@ function DayList({ title, lessons, isToday, clockDate, clockMinutes }: DayListPr
   if (lessons.length === 0) return null;
   return (
     <Group header={title}>
+      <MondayTalk date={date} />
       {collapse && (
         <Cell
           class="past-toggle"

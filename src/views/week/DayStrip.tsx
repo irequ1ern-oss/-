@@ -2,7 +2,7 @@
 // Работает как вкладки: стрелки ← → на клавиатуре листают дни (и недели на краю).
 
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
-import type { ResolvedDay } from '../../core/schedule';
+import { activeLessons, type ResolvedDay } from '../../core/schedule';
 import { weekdayShort } from '../../core/format';
 import type { DateStr } from '../../core/time';
 import type { HomeworkItem } from '../../shell/app';
@@ -75,6 +75,8 @@ export function DayStrip({ days, selected, today, homework, onSelect, onStep }: 
     >
       {days.map((day) => {
         const marks = dayMarks(day, homework);
+        const lessons = activeLessons(day);
+        const end = lessons[lessons.length - 1]?.end;
         const isSelected = day.date === selected;
         const classes = ['day-pill', 'pressable'];
         if (isSelected) classes.push('is-selected');
@@ -87,13 +89,14 @@ export function DayStrip({ days, selected, today, homework, onSelect, onStep }: 
             role="tab"
             aria-selected={isSelected}
             aria-controls={PANEL_ID}
-            aria-label={dayPillLabel(day, today, marks)}
+            aria-label={[dayPillLabel(day, today, marks), end && `до ${end}`].filter(Boolean).join(', ')}
             tabIndex={isSelected ? 0 : -1}
             onClick={() => onSelect(day.date)}
           >
             <span class="day-pill__box">
               <span class="day-pill__wd">{weekdayShort(day.date)}</span>
               <span class="day-pill__num tabular">{Number(day.date.slice(8, 10))}</span>
+              <span class="day-pill__end tabular">{end ? `до ${end}` : 'Свободно'}</span>
             </span>
             <span class="day-pill__dots" aria-hidden="true">
               {marks.changes && <span class="day-pill__dot day-pill__dot--changes" />}
