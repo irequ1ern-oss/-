@@ -104,7 +104,7 @@ function Sheet({ spec, depth, covered }: { spec: SheetSpec; depth: number; cover
     if (spec.leaving) close();
   }, [spec.leaving]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const raf = requestAnimationFrame(() => setPhase('open'));
     panel.current?.focus({ preventScroll: true });
     // Esc закрывает только верхнюю шторку; если поверх открыто меню, Esc достаётся ему.

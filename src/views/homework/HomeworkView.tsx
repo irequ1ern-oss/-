@@ -1,7 +1,6 @@
 // Экран «ДЗ»: кольца за неделю, задания по срокам со свайпами, свёрнутые выполненные.
-// До этапа 3 настоящих ДЗ нет — экран-заглушка; в превью — примерные данные (изменения не сохраняются).
 
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import { useAppData, useSubject } from '../../shell/app';
 import { useClock } from '../../shell/clock';
 import { ActivityRings } from '../../ui/ActivityRings';
@@ -13,15 +12,14 @@ import { SwipeRow, type SwipeAction } from '../../ui/SwipeRow';
 import { haptic } from '../../ui/haptics';
 import { showToast } from '../../ui/overlays';
 import {
-  dueLabel, groupHomework, isOverdue, postpone, postponedDue, postponeToastText, removeHomework, replaceHomework,
+  dueLabel, groupHomework, isOverdue, postpone, postponedDue, postponeToastText, removeHomework,
   restoreHomework, setDone, streakText,
 } from './homeworkLogic';
 import { hasOverdue, streakDays, weekRings, weekStats, type TrackedHomework, type WeekRing } from './stats';
+import { openStudyEditor } from '../StudyEditor';
+import { Button, IconButton } from '../../ui/controls';
 import { useHomework } from './store';
 import './homework.css';
-
-/** Сколько видна галочка, прежде чем строка уйдёт в «Выполнено» (как в «Напоминаниях»). */
-const CHECK_DELAY = 450;
 
 interface RowHandlers {
   onDone: (item: TrackedHomework, done: boolean) => void;
@@ -30,39 +28,39 @@ interface RowHandlers {
 }
 
 export function HomeworkView() {
-  const { homework: source, src } = useAppData();
+  const { src } = useAppData();
   const [items, update] = useHomework();
   const today = useClock('minute').date;
   const { groups, done } = useMemo(() => groupHomework(items, today), [items, today]);
 
   const handlers: RowHandlers = {
-    onDone(item, value) {
-      update((list) => setDone(list, item.id, value, today));
+    async onDone(item, value) {
+      if (!await update((list) => setDone(list, item.id, value, today))) return;
       if (value) {
         showToast({
           text: 'ДЗ отмечено',
           icon: 'check-circle',
           actionLabel: 'Отменить',
-          onAction: () => update((list) => replaceHomework(list, item)),
+          onAction: () => update(list => setDone(list, item.id, false, today)),
         });
       }
     },
-    onPostpone(item) {
+    async onPostpone(item) {
       const due = postponedDue(item, today, src);
-      update((list) => postpone(list, item.id, due));
+      if (!await update((list) => postpone(list, item.id, due))) return;
       showToast({
         text: postponeToastText(due, today),
         icon: 'calendar-plus',
         actionLabel: 'Отменить',
-        onAction: () => update((list) => replaceHomework(list, item)),
+        onAction: () => update(list => list.map(h => h.id === item.id && h.due === due ? { ...h, due: item.due } : h)),
       });
     },
-    onDelete(item) {
+    async onDelete(item) {
       const box: ReturnType<typeof removeHomework> = { items: [] };
-      update((list) => {
+      if (!await update((list) => {
         Object.assign(box, removeHomework(list, item.id));
         return box.items;
-      });
+      })) return;
       const removed = box.removed;
       if (!removed) return;
       showToast({
@@ -74,16 +72,20 @@ export function HomeworkView() {
     },
   };
 
-  if (source.length === 0) {
-    return (
-      <Screen title="ДЗ" class="screen--centered">
-        <EmptyState plain icon="check-square" title="Домашних заданий пока нет" text="Появятся на этапе 3" />
-      </Screen>
-    );
-  }
+  const add = () => openStudyEditor({ kind: 'homework' });
+  if (!items.length) return (
+    <Screen title="ДЗ">
+      <div class="study-empty">
+        <Icon name="check-square" size={32} />
+        <h2 class="t-title2">Заданий пока нет</h2>
+        <p>Выбери предмет — подставим дату следующей пары.</p>
+        <Button icon="plus" onClick={add}>Записать ДЗ</Button>
+      </div>
+    </Screen>
+  );
 
   return (
-    <Screen title="ДЗ">
+    <Screen title="ДЗ" trailing={<IconButton icon="plus" label="Записать ДЗ" variant="glass" onClick={add} />}>
       <div class="homework">
         {items.length > 0 && <StatsCard items={items} today={today} />}
         {groups.map((g) => (
@@ -147,42 +149,12 @@ function StatsCard({ items, today }: { items: TrackedHomework[]; today: string }
 
 function HomeworkRow({ item, today, onDone, onPostpone, onDelete }: { item: TrackedHomework; today: string } & RowHandlers) {
   const subject = useSubject(item.subjectId);
-  // Галочка ставится сразу, а строка переезжает чуть позже — чтобы было видно отметку.
-  const [pending, setPending] = useState<boolean | null>(null);
-  const [animate, setAnimate] = useState(false);
-  const timer = useRef<number | undefined>(undefined);
-  const commit = useRef<(() => void) | null>(null);
-
-  useEffect(() => setPending(null), [item.done]);
-  // Ушли с экрана, пока галочка ждала, — отметку не теряем.
-  useEffect(
-    () => () => {
-      window.clearTimeout(timer.current);
-      commit.current?.();
-    },
-    [],
-  );
-
-  const checked = pending ?? item.done;
+  const checked = item.done;
   const overdue = isOverdue(item, today) && !checked;
-  const due = dueLabel(item.due, today, item.done);
-
+  const due = dueLabel(item.due, today, checked);
   const toggle = () => {
     haptic();
-    setAnimate(true);
-    window.clearTimeout(timer.current);
-    commit.current = null;
-    const next = !checked;
-    if (next === item.done) {
-      setPending(null);
-      return;
-    }
-    setPending(next);
-    commit.current = () => {
-      commit.current = null;
-      onDone(item, next);
-    };
-    timer.current = window.setTimeout(() => commit.current?.(), CHECK_DELAY);
+    onDone(item, !checked);
   };
 
   const leading: SwipeAction = item.done
@@ -209,8 +181,8 @@ function HomeworkRow({ item, today, onDone, onPostpone, onDelete }: { item: Trac
           type="button"
           role="checkbox"
           aria-checked={checked}
-          aria-label="Отметить выполненным"
-          class={`hw-check${checked ? ' is-checked' : ''}${animate ? ' is-animated' : ''}`}
+          aria-label={checked ? `Вернуть ДЗ: ${item.title}` : `Выполнить ДЗ: ${item.title}`}
+          class={`hw-check${checked ? ' is-checked' : ''}`}
           onClick={toggle}
         >
           <span key={String(checked)} class="hw-check__circle" aria-hidden="true">
@@ -218,12 +190,12 @@ function HomeworkRow({ item, today, onDone, onPostpone, onDelete }: { item: Trac
           </span>
         </button>
         <SubjectIcon color={subject.color} icon={subject.icon} size={29} class="hw-row__icon" />
-        <span class="hw-row__text">
+        <button type="button" class="hw-row__text" onClick={() => openStudyEditor({ kind: 'homework', item })}>
           <span class="hw-row__title">{item.title}</span>
           <span class="hw-row__subtitle t-subhead">
             {subject.short} · <span class={overdue ? 'hw-row__due is-overdue' : 'hw-row__due'}>{due}</span>
           </span>
-        </span>
+        </button>
       </div>
     </SwipeRow>
   );

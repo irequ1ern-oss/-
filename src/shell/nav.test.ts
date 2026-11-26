@@ -3,6 +3,7 @@ import { canGoBackInHistory, parseHash, routeChain, routeToHash, type Route } fr
 
 describe('навигация', () => {
   it('разбирает и собирает адрес', () => {
+    expect(parseHash('#/today/timer')).toEqual({ tab: 'today', path: ['timer'] });
     expect(parseHash('#/week')).toEqual({ tab: 'week', path: [] });
     expect(parseHash('#/settings/subjects/mss')).toEqual({ tab: 'settings', path: ['subjects', 'mss'] });
     expect(parseHash('')).toEqual({ tab: 'today', path: [] });

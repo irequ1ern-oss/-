@@ -1,16 +1,15 @@
 // Содержимое выбранного дня: заголовок с числом пар, плашка изменений, пары и ДЗ к этому дню.
 
 import { activeLessons, dayHasChanges, type ResolvedDay } from '../../core/schedule';
-import { lessonPhase } from '../../core/today';
+import { groupPairs } from '../../core/bells';
 import { formatDDMM, lessonsCount } from '../../core/format';
 import type { Clock } from '../../core/time';
 import { useSubject, type HomeworkItem } from '../../shell/app';
-import { navigate } from '../../shell/nav';
+import { openStudyEditor } from '../StudyEditor';
 import { Cell, EmptyState, Group } from '../../ui/List';
 import { Icon } from '../../ui/Icon';
 import { SubjectIcon } from '../../ui/SubjectIcon';
-import { MondayTalk } from '../MondayTalk';
-import { LessonRow } from '../LessonRow';
+import { PairList } from '../PairList';
 import { dayTitle } from './weekLogic';
 
 interface Props {
@@ -20,7 +19,7 @@ interface Props {
 }
 
 export function DayPanel({ day, clock, homework }: Props) {
-  const count = activeLessons(day).length;
+  const count = groupPairs(activeLessons(day)).length;
   const due = homework.filter((h) => !h.done && h.due === day.date);
   const countLabel = count > 0 ? lessonsCount(count) : day.lessons.length > 0 ? 'Пары отменены' : '';
 
@@ -44,12 +43,7 @@ export function DayPanel({ day, clock, homework }: Props) {
       {day.lessons.length === 0 ? (
         <EmptyState icon="coffee" title="Пар нет" text={day.period?.title} />
       ) : (
-        <Group>
-          <MondayTalk date={day.date} />
-          {day.lessons.map((l, i) => (
-            <LessonRow key={`${l.start}-${i}`} lesson={l} phase={lessonPhase(l, clock)} />
-          ))}
-        </Group>
+        <PairList key={day.date} day={day} clock={clock} />
       )}
 
       {due.length > 0 && (
@@ -72,7 +66,7 @@ function HomeworkRow({ item }: { item: HomeworkItem }) {
       subtitle={subject.short}
       accessory="chevron"
       label={`ДЗ, ${subject.full}: ${item.title}`}
-      onClick={() => navigate({ tab: 'homework', path: [] })}
+      onClick={() => openStudyEditor({ kind: 'homework', item })}
     />
   );
 }

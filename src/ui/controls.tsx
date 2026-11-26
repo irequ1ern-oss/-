@@ -96,7 +96,7 @@ type ButtonProps = {
   icon?: IconName;
   children?: ComponentChildren;
   block?: boolean;
-} & JSX.HTMLAttributes<HTMLButtonElement>;
+} & JSX.ButtonHTMLAttributes<HTMLButtonElement>;
 
 export function Button({ variant = 'filled', size = 'md', icon, children, block, class: cls, ...rest }: ButtonProps) {
   const classes = ['btn', `btn--${variant}`, `btn--${size}`, 'pressable'];

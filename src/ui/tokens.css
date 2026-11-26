@@ -283,3 +283,18 @@
   --sc-cyan-tile: #4bbbe7;
   --sc-teal-tile: #35c0d8;
 }
+
+/* Постоянная палитра циферблата: светящиеся штрихи на тёмной эмали во всех темах. */
+:root {
+  --clock-face: #23131d;
+  --clock-wine: #6b253f;
+  --clock-shadow: #19141e;
+  --clock-ink: #fff3ef;
+  --clock-muted: #e5c2cc;
+  --clock-hand: #ffabbb;
+  --fs-clock: clamp(52px, 16cqi, 90px);
+  --fs-focus-clock: clamp(58px, 20cqi, 202px);
+  --fs-focus-long: clamp(43px, 14cqi, 148px);
+  --fs-clock-long: clamp(32px, 10cqi, 66px);
+  --fs-hero-title: clamp(30px, 7.6cqi, 54px);
+}

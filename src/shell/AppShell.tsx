@@ -18,7 +18,7 @@ import { UpcomingAside } from '../views/UpcomingAside';
 import {
   ActionsContext, AppDataContext, LayoutContext, type AppActions, type AppData, type Layout,
 } from './app';
-import { usePendingHomework } from '../views/homework/store';
+import { usePlanner } from '../state/planner';
 import { ClockContext, type ClockSource } from './clock';
 import { goBack, useRoute, type Route } from './nav';
 import { Stack, type BackInfo } from './Stack';
@@ -36,7 +36,7 @@ function titleOf(route: Route): string {
 function renderRoute(route: Route, back: BackInfo | undefined) {
   switch (route.tab) {
     case 'today':
-      return <TodayView />;
+      return <TodayView focus={route.path[0] === 'timer'} />;
     case 'week':
       return <WeekView />;
     case 'homework':
@@ -118,6 +118,7 @@ export function AppShell({ data, clock, forceLayout }: Props) {
   const wide = useMediaQuery('(min-width: 1100px)');
   const layout: Layout = forceLayout ?? (wide ? 'wide' : tablet ? 'tablet' : 'phone');
   const route = useRoute();
+  const focusTimer = route.tab === 'today' && route.path[0] === 'timer';
   const settings = useSettings();
   const [asideSubject, setAsideSubject] = useState<string | null>(null);
   const main = useRef<HTMLElement>(null);
@@ -133,19 +134,21 @@ export function AppShell({ data, clock, forceLayout }: Props) {
   const actions = useMemo<AppActions>(
     () => ({
       openSubject(id) {
-        if (layout === 'wide') setAsideSubject(id);
+        if (layout === 'wide' && !focusTimer) setAsideSubject(id);
         else openSheet({ label: 'Карточка предмета', content: () => <SubjectCard id={id} /> });
       },
       openPlus,
     }),
-    [layout, openPlus],
+    [layout, openPlus, focusTimer],
   );
 
-  const homeworkCount = usePendingHomework(data.homework);
+  const [planner] = usePlanner(data);
+  const homeworkCount = planner.homework.filter(item => !item.done).length;
   const collapsed = layout !== 'phone' && settings.sidebarCollapsed;
   useSlideOnCollapse(main, collapsed, layout);
   const classes = ['shell', `shell--${layout}`];
   if (collapsed) classes.push('is-collapsed');
+  if (focusTimer) classes.push('shell--focus');
 
   return (
     <ClockContext.Provider value={clock}>
@@ -153,7 +156,7 @@ export function AppShell({ data, clock, forceLayout }: Props) {
         <LayoutContext.Provider value={layout}>
           <ActionsContext.Provider value={actions}>
             <div class={classes.join(' ')}>
-              {layout !== 'phone' && <Sidebar active={route.tab} homeworkCount={homeworkCount} onPlus={openPlus} />}
+              {!focusTimer && layout !== 'phone' && <Sidebar active={route.tab} homeworkCount={homeworkCount} onPlus={openPlus} />}
               <main class="shell__main" ref={main}>
                 <Stack
                   route={route}
@@ -163,7 +166,7 @@ export function AppShell({ data, clock, forceLayout }: Props) {
                   onBack={(parent) => goBack(parent)}
                 />
               </main>
-              {layout === 'wide' && (
+              {!focusTimer && layout === 'wide' && (
                 <aside class="shell__aside" aria-label={asideSubject ? 'Карточка предмета' : 'Ближайшее'}>
                   {asideSubject ? (
                     <div class="aside-panel">
@@ -183,7 +186,7 @@ export function AppShell({ data, clock, forceLayout }: Props) {
                   )}
                 </aside>
               )}
-              {layout === 'phone' && <TabBar active={route.tab} homeworkCount={homeworkCount} onPlus={openPlus} />}
+              {!focusTimer && layout === 'phone' && <TabBar active={route.tab} homeworkCount={homeworkCount} onPlus={openPlus} />}
               <OverlayHost />
             </div>
           </ActionsContext.Provider>

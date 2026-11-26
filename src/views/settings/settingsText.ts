@@ -1,3 +1,4 @@
+import { groupPairs } from '../../core/bells';
 // Подписи экранов настроек, которые считаются из расписания (без отрисовки — их удобно проверять тестами).
 
 import { formatDayMonth, lessonsCount } from '../../core/format';
@@ -25,7 +26,7 @@ export function daySummary(lessons: Lesson[]): string {
   if (lessons.length === 0) return 'Пар нет';
   const start = lessons.reduce((m, l) => (toMinutes(l.start) < toMinutes(m) ? l.start : m), lessons[0].start);
   const end = lessons.reduce((m, l) => (toMinutes(l.end) > toMinutes(m) ? l.end : m), lessons[0].end);
-  return `${lessonsCount(lessons.length)} · ${start}–${end}`;
+  return `${lessonsCount(groupPairs(lessons).length)} · ${start}–${end}`;
 }
 
 /** Предметы, у которых кабинеты 1-й и 2-й подгруппы различаются (в порядке списка предметов). */

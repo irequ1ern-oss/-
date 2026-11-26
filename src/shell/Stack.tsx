@@ -20,8 +20,9 @@ interface Props {
 }
 
 /** При «назад» уходящий экран ещё виден — помним цепочку, в которой он был, чтобы дать ему его же кнопку «‹». */
-type Anim = { kind: 'push' } | { kind: 'pop'; exiting: Route; chain: Route[] } | null;
+type Anim = { kind: 'tab'; direction: number } | { kind: 'push' } | { kind: 'pop'; exiting: Route; chain: Route[] } | null;
 
+const TAB_ORDER = ['today', 'week', 'homework', 'notes', 'settings'];
 const DURATION = 460;
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -43,7 +44,9 @@ export function Stack({ route, settingsOverToday, render, titleOf, onBack }: Pro
     if (skipNext.current || reducedMotion()) anim.current = null;
     else if (isPush) anim.current = { kind: 'push' };
     else if (isPop) anim.current = { kind: 'pop', exiting: prev.current.chain[prev.current.chain.length - 1], chain: prev.current.chain };
-    else anim.current = null;
+    else if (prev.current.chain[0].tab !== chain[0].tab) {
+      anim.current = { kind: 'tab', direction: Math.sign(TAB_ORDER.indexOf(chain[0].tab) - TAB_ORDER.indexOf(prev.current.chain[0].tab)) };
+    } else anim.current = null;
     skipNext.current = false;
     prev.current = { keys, chain };
   }
@@ -151,6 +154,7 @@ export function Stack({ route, settingsOverToday, render, titleOf, onBack }: Pro
         const classes = ['stack__layer'];
         if (exiting) classes.push('is-exiting', 'anim-pop-out');
         else classes.push(isTop ? 'is-top' : 'is-below');
+        if (a?.kind === 'tab' && isTop) classes.push(a.direction > 0 ? 'anim-tab-forward' : 'anim-tab-back');
         if (a?.kind === 'push' && isTop) classes.push('anim-push-in');
         if (a?.kind === 'push' && i === chain.length - 2) classes.push('anim-push-cover');
         if (a?.kind === 'pop' && isTop) classes.push('anim-pop-reveal');

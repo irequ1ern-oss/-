@@ -1,3 +1,4 @@
+import { groupPairs } from '../../core/bells';
 // Логика экрана «Неделя» без интерфейса: подписи, отметки под днями, листание недель, решение по свайпу.
 
 import { activeLessons, dayHasChanges, type ResolvedDay, type ScheduleSources } from '../../core/schedule';
@@ -59,7 +60,7 @@ export function dayMarks(day: ResolvedDay, homework: HomeworkItem[]): DayMarks {
 
 /** Подпись дня для экранного диктора: «Четверг, 15 октября, 5 пар, есть изменения». */
 export function dayPillLabel(day: ResolvedDay, today: DateStr, marks: DayMarks): string {
-  const count = activeLessons(day).length;
+  const count = groupPairs(activeLessons(day)).length;
   const parts = [capitalize(formatDayLong(day.date))];
   if (day.date === today) parts.push('сегодня');
   parts.push(count > 0 ? lessonsCount(count) : day.lessons.length > 0 ? 'пары отменены' : 'пар нет');

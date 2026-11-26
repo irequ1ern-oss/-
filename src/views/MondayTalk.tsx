@@ -4,7 +4,7 @@ import { useClock } from '../shell/clock';
 import { useSettings, updateSettings } from '../state/settings';
 import { Cell } from '../ui/List';
 import { Switch } from '../ui/controls';
-import { ProgressRing } from '../ui/ProgressRing';
+import { BellCard } from './today/BellCard';
 
 const TITLE = 'Разговоры о важном';
 const START = '08:30';
@@ -30,19 +30,8 @@ export function TalkHero() {
   const started = seconds >= startSecond;
   const remaining = Math.max(0, (started ? talkEndSecond : startSecond) - seconds);
   return (
-    <div class="hero-box">
-      <div class="hero hero--lesson" style="--c:var(--accent)">
-        <ProgressRing size={136} stroke={12} color="var(--c)" label="Ход встречи"
-          progress={started ? Math.min(1, (seconds - startSecond) / (talkEndSecond - startSecond)) : 0}>
-          <span class="hero__timer hero__timer--long tabular">{formatTimer(remaining)}</span>
-          <span class="t-footnote t-secondary">{started ? 'до конца' : 'до начала'}</span>
-        </ProgressRing>
-        <div class="hero__side">
-          <span class="hero__eyebrow t-footnote t-upper">{started ? 'Идёт встреча' : 'До встречи'}</span>
-          <p class="t-title2">{TITLE}</p>
-          <p class="t-subhead t-secondary tabular">{START}–{END}</p>
-        </div>
-      </div>
-    </div>
+    <BellCard phase={started ? 'Идёт встреча' : 'До встречи'} label={started ? 'До конца встречи' : 'До начала встречи'}
+      value={formatTimer(remaining)} detail={`${START}–${END}`} footer={<strong>{TITLE}</strong>}
+      progress={started ? (seconds - startSecond) / (talkEndSecond - startSecond) : undefined} />
   );
 }

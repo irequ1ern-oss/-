@@ -8,7 +8,7 @@ import {
 describe('подписи настроек', () => {
   it('сводка дня: число пар и время от первой до последней', () => {
     const mon = scheduleDays(mainSchedule).find((d) => d.key === 'mon')!;
-    expect(daySummary(mon.lessons)).toBe('5 пар · 09:00–16:30');
+    expect(daySummary(mon.lessons)).toBe('4 пары · 09:00–16:30');
     expect(daySummary([{ start: '10:50', end: '12:40', subjectId: 'a' }])).toBe('1 пара · 10:50–12:40');
     expect(daySummary([])).toBe('Пар нет');
   });

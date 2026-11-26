@@ -16,7 +16,7 @@ describe('computeHero: пять состояний главного блока',
     if (r.hero.kind !== 'lesson') return;
     expect(r.hero.lesson.subjectId).toBe('mss');
     expect(r.hero.secondsLeft).toBe(27 * 60 + 12); // таймер «27:12»
-    expect(r.hero.progress).toBeCloseTo((72 * 60 + 48) / (100 * 60));
+    expect(r.hero.progress).toBeCloseTo((17 * 60 + 48) / (45 * 60));
     expect(r.upNext?.subjectId).toBe('pfo');
     expect(r.progress).toMatchObject({ index: 1, total: 2, remainingSeconds: (2 * 3600 + 27 * 60 + 12) });
     expect(r.progress?.segments[1]).toBe(0);
@@ -122,5 +122,39 @@ describe('computeHero: пять состояний главного блока',
     expect(r.hero.kind).toBe('before');
     if (r.hero.kind === 'before') expect(r.hero.first.subjectId).toBe('pfo');
     expect(r.progress?.total).toBe(1);
+  });
+});
+
+describe('звонки внутри пары', () => {
+  const monday = (time: string) => computeHero(clockAt('2026-10-12', time), sources());
+  it.each([
+    ['09:00', 'lesson', 2700], ['09:44:59', 'lesson', 1], ['09:45', 'break', 600],
+    ['09:54:59', 'break', 1], ['09:55', 'lesson', 2700], ['10:40', 'break', 600],
+    ['11:35', 'break', 1200], ['11:54:59', 'break', 1], ['11:55', 'lesson', 2700],
+  ] as const)('%s → %s, %i секунд', (time, kind, seconds) => {
+    const state = monday(time);
+    expect(state.hero).toMatchObject({ kind, [kind === 'lesson' ? 'secondsLeft' : 'secondsUntil']: seconds });
+    expect(state.changesAt).toBe(clockAt('2026-10-12', time).seconds + seconds);
+    expect(state.progress?.total).toBe(2);
+  });
+
+  it('после внутренней перемены продолжается тот же предмет', () => {
+    const h = monday('09:45').hero;
+    expect(h).toMatchObject({ kind: 'break', withinPair: true, next: { subjectId: 'mss' }, period: { start: '09:55', half: 2 } });
+    expect(tickHero(h, clockAt('2026-10-12', '09:47:30').seconds)).toMatchObject({ secondsUntil: 450 });
+  });
+
+  it('разные предметы занимают одну пару, сохраняют кабинеты и меняются точно по звонку', () => {
+    const src = sources({ periods: [period({ from: '2026-10-12', to: '2026-10-12', week: {
+      mon: [{ ...lesson('09:00', '09:45'), subjectId: 'ig' }, { ...lesson('09:55', '10:40'), subjectId: 'mss', room: '27' }],
+    } })] });
+    const at = (time: string) => computeHero(clockAt('2026-10-12', time), src);
+    expect(at('09:45')).toMatchObject({ progress: { index: 1, total: 1 }, hero: { kind: 'break', withinPair: true, next: { subjectId: 'mss', room: '27' } } });
+    expect(at('09:55').hero).toMatchObject({ kind: 'lesson', lesson: { subjectId: 'mss' }, last: true, secondsLeft: 2700 });
+  });
+
+  it('у нестандартного занятия остаются его собственные границы', () => {
+    const src = sources({ periods: [period({ from: '2026-10-12', to: '2026-10-12', week: { mon: [lesson('09:15', '10:05')] } })] });
+    expect(computeHero(clockAt('2026-10-12', '09:45'), src).hero).toMatchObject({ kind: 'lesson', secondsLeft: 1200 });
   });
 });

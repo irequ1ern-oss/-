@@ -3,23 +3,24 @@
 import { useContext, useEffect, useMemo, useState } from 'preact/hooks';
 import { computeHero, type DayProgress } from '../../core/hero';
 import { activeLessons, type ResolvedLesson } from '../../core/schedule';
-import { lessonPhase } from '../../core/today';
-import { forDayLabel, formatDayLong, formatDuration, greeting, lessonsCount, plural } from '../../core/format';
-import { toMinutes } from '../../core/time';
+import { groupPairs, type Pair } from '../../core/bells';
+import { forDayLabel, formatDayLong, formatDuration, greeting, lessonsCount } from '../../core/format';
+import { PairList } from '../PairList';
 import { useSettings } from '../../state/settings';
 import { useAppData, useLayout, useSubject } from '../../shell/app';
 import { ClockContext, useClock } from '../../shell/clock';
 import { navigate } from '../../shell/nav';
 import { Screen } from '../../ui/Screen';
-import { Group, Cell, IconTile } from '../../ui/List';
 import { IconButton } from '../../ui/controls';
 import { Icon } from '../../ui/Icon';
-import { LessonRow } from '../LessonRow';
-import { MondayTalk, TalkHero, talkEndSecond } from '../MondayTalk';
+import { TalkHero, talkEndSecond } from '../MondayTalk';
+import { StudyActions } from '../StudyEditor';
+import { DueSoon } from '../UpcomingAside';
 import { Hero } from './Hero';
+import { FocusTimer } from './FocusTimer';
 import './today.css';
 
-export function TodayView() {
+export function TodayView({ focus = false }: { focus?: boolean }) {
   // Состояние экрана — с точностью до минуты; секунды идут только в таймере главного блока (Hero).
   const clock = useClock('minute');
   const { src, demo } = useAppData();
@@ -30,17 +31,19 @@ export function TodayView() {
   const state = useMemo(() => computeHero(clock, src), [clock, src]);
   const showTalk = state.hero.kind === 'before' && talkDates.includes(clock.date) && clock.seconds < talkEndSecond;
   useWakeAt(showTalk ? talkEndSecond : state.changesAt, clock.date);
-  const { hero, today, progress, upNext } = state;
-  const totalToday = activeLessons(today).length;
+  const { hero, today, progress } = state;
+  const pairs = groupPairs(activeLessons(today));
 
   // Под главным блоком: сегодняшний список, а после пар и в выходной — следующий учебный день.
   const nextDay = hero.kind === 'after' || hero.kind === 'dayoff' ? hero.next : null;
   const listDay = nextDay ? nextDay.day : today;
   const listTitle = `Расписание ${forDayLabel(listDay.date, clock.date)}`;
 
+  const card = showTalk ? <TalkHero /> : <Hero hero={hero} today={clock.date} totalToday={pairs.length} />;
+  if (focus) return <FocusTimer date={clock.date}>{card}</FocusTimer>;
   return (
     <Screen
-      title="Сегодня"
+      title="Сегодня" class="screen--today"
       above={
         <div class="today-above">
           <p class="t-subhead t-secondary">{greeting(clock.minutes, name)}</p>
@@ -57,17 +60,22 @@ export function TodayView() {
         </div>
       }
       trailing={
-        layout === 'phone' ? (
-          <IconButton icon="gear-six" label="Настройки" variant="glass" size={40} onClick={() => navigate({ tab: 'settings', path: [] })} />
-        ) : undefined
+        <>
+          <IconButton icon="corners-out" label="Крупный таймер" variant="glass" size={44}
+            onClick={() => navigate({ tab: 'today', path: ['timer'] })} />
+          {layout === 'phone' && <IconButton icon="gear-six" label="Настройки" variant="glass" size={44}
+            onClick={() => navigate({ tab: 'settings', path: [] })} />}
+        </>
       }
     >
       <div class="today">
-        {showTalk ? <TalkHero /> : <Hero hero={hero} today={clock.date} totalToday={totalToday} />}
-        {progress && <DayProgressBar progress={progress} lessons={activeLessons(today)} kind={hero.kind} />}
-        {/* До пар следующая пара уже в главном блоке, а «Далее» со второй парой только путает */}
-        {upNext && hero.kind !== 'before' && <UpNext lesson={upNext} nowMinutes={clock.minutes} />}
-        <DayList date={listDay.date} title={listTitle} lessons={listDay.lessons} isToday={!nextDay} clockDate={clock.date} clockMinutes={clock.minutes} />
+        <div class="today__overview">
+          {card}
+          {progress && <DayProgressBar progress={progress} pairs={pairs} kind={hero.kind === 'break' && hero.withinPair ? 'lesson' : hero.kind} />}
+          <StudyActions />
+          <DueSoon />
+        </div>
+        <PairList key={listDay.date} day={listDay} clock={clock} title={listTitle} foldPast={!nextDay} />
       </div>
     </Screen>
   );
@@ -90,9 +98,9 @@ function useWakeAt(seconds: number | undefined, date: string) {
   }, [seconds, date, source]);
 }
 
-function DayProgressBar({ progress, lessons, kind }: { progress: DayProgress; lessons: ResolvedLesson[]; kind: string }) {
-  const first = lessons[0];
-  const last = lessons[lessons.length - 1];
+function DayProgressBar({ progress, pairs, kind }: { progress: DayProgress; pairs: Pair<ResolvedLesson>[]; kind: string }) {
+  const first = pairs[0];
+  const last = pairs[pairs.length - 1];
   // В перемену — сколько пар позади: «Перемена» уже в главном блоке, а короткая подпись
   // и на 360 px помещается в одну строку с «до конца учёбы 1 ч 22 мин».
   const left =
@@ -111,7 +119,7 @@ function DayProgressBar({ progress, lessons, kind }: { progress: DayProgress; le
       </div>
       <div class="day-progress__bar" aria-hidden="true">
         {progress.segments.map((s, i) => (
-          <SegmentFill key={i} value={s} subjectId={lessons[i].subjectId} />
+          <SegmentFill key={i} value={s} subjectId={pairs[i].lessons[0].subjectId} />
         ))}
       </div>
     </section>
@@ -124,53 +132,5 @@ function SegmentFill({ value, subjectId }: { value: number; subjectId: string })
     <span class="day-progress__seg">
       <span class="day-progress__fill" style={`--c:var(--sc-${subject.color});transform:scaleX(${value})`} />
     </span>
-  );
-}
-
-function UpNext({ lesson, nowMinutes }: { lesson: ResolvedLesson; nowMinutes: number }) {
-  const until = toMinutes(lesson.start) - nowMinutes;
-  return (
-    <Group header="Далее">
-      <LessonRow lesson={lesson} extra={until > 0 ? `через ${formatDuration(until)}` : undefined} />
-    </Group>
-  );
-}
-
-interface DayListProps {
-  date: string;
-  title: string;
-  lessons: ResolvedLesson[];
-  isToday: boolean;
-  clockDate: string;
-  clockMinutes: number;
-}
-
-/** Весь день компактным списком. Прошедшие пары свёрнуты в одну строку, чтобы не занимать экран. */
-function DayList({ date, title, lessons, isToday, clockDate, clockMinutes }: DayListProps) {
-  const [showPast, setShowPast] = useState(false);
-  const clock = { date: clockDate, minutes: clockMinutes, seconds: clockMinutes * 60 };
-  const phases = lessons.map((l) => (isToday ? lessonPhase(l, clock) : 'upcoming'));
-  const pastCount = phases.findIndex((p) => p !== 'past');
-  const leadingPast = pastCount === -1 ? lessons.length : pastCount;
-  const collapse = isToday && leadingPast >= 2 && !showPast;
-
-  if (lessons.length === 0) return null;
-  return (
-    <Group header={title}>
-      <MondayTalk date={date} />
-      {collapse && (
-        <Cell
-          class="past-toggle"
-          icon={<IconTile name="check-fat" color="gray" />}
-          title={`${leadingPast} ${plural(leadingPast, 'пара прошла', 'пары прошли', 'пар прошло')}`}
-          subtitle={<span class="tabular">{lessons.slice(0, leadingPast).map((l) => l.start).join(' · ')}</span>}
-          accessory={<Icon name="caret-down" size={16} class="cell__chevron" />}
-          onClick={() => setShowPast(true)}
-        />
-      )}
-      {lessons.map((l, i) =>
-        collapse && i < leadingPast ? null : <LessonRow key={`${l.start}-${i}`} lesson={l} phase={phases[i]} />,
-      )}
-    </Group>
   );
 }

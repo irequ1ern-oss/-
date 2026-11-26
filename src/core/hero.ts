@@ -3,6 +3,7 @@
 
 import { activeLessons, resolveDay, type ResolvedDay, type ResolvedLesson, type ScheduleSources, type SchedulePeriod } from './schedule';
 import { addDays, toMinutes, weekdayIndex, WEEKDAY_KEYS, type Clock, type DateStr } from './time';
+import { groupPairs, periodsOf, type Period } from './bells';
 import { SEARCH_DAYS } from './today';
 
 export interface NextStudyDay {
@@ -18,12 +19,15 @@ export type HeroState =
   | {
       kind: 'lesson';
       lesson: ResolvedLesson;
-      /** Сколько секунд до конца пары. */
+      period: Period;
+      last: boolean;
+      following?: { lesson: ResolvedLesson; period: Period };
+      /** Сколько секунд до ближайшего звонка. */
       secondsLeft: number;
-      /** Доля прошедшего времени пары, 0…1. */
+      /** Доля прошедшего времени урока, 0…1. */
       progress: number;
     }
-  | { kind: 'break'; next: ResolvedLesson; secondsUntil: number; /** Длина перемены в секундах. */ breakSeconds: number }
+  | { kind: 'break'; next: ResolvedLesson; period: Period; withinPair: boolean; secondsUntil: number; /** Длина перемены в секундах. */ breakSeconds: number }
   | { kind: 'before'; first: ResolvedLesson; secondsUntil: number }
   | { kind: 'after'; next: NextStudyDay | null }
   | { kind: 'dayoff'; reason: DayOffReason; period?: SchedulePeriod; next: NextStudyDay | null };
@@ -79,8 +83,8 @@ function isHolidayPeriod(period: SchedulePeriod): boolean {
   return WEEKDAY_KEYS.every((k) => !period.week[k]?.length);
 }
 
-const startSec = (l: ResolvedLesson) => toMinutes(l.start) * 60;
-const endSec = (l: ResolvedLesson) => toMinutes(l.end) * 60;
+const startSec = (l: { start: string }) => toMinutes(l.start) * 60;
+const endSec = (l: { end: string }) => toMinutes(l.end) * 60;
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
 /**
@@ -91,12 +95,12 @@ export function tickHero<H extends HeroState>(hero: H, seconds: number): H {
   const h: HeroState = hero;
   switch (h.kind) {
     case 'lesson': {
-      const start = startSec(h.lesson);
-      const end = endSec(h.lesson);
+      const start = startSec(h.period);
+      const end = endSec(h.period);
       return { ...h, secondsLeft: Math.max(0, end - seconds), progress: clamp01((seconds - start) / (end - start)) } as H;
     }
     case 'break':
-      return { ...h, secondsUntil: Math.max(0, startSec(h.next) - seconds) } as H;
+      return { ...h, secondsUntil: Math.max(0, startSec(h.period) - seconds) } as H;
     case 'before':
       return { ...h, secondsUntil: Math.max(0, startSec(h.first) - seconds) } as H;
     default:
@@ -126,44 +130,41 @@ export function computeHero(clock: Clock, src: ScheduleSources): TodayHero {
     return { today, hero: { kind: 'after', next: findNextStudyDay(clock.date, src) } };
   }
 
-  const segments = active.map((l) => {
-    if (now >= endSec(l)) return 1;
-    if (now <= startSec(l)) return 0;
-    return (now - startSec(l)) / (endSec(l) - startSec(l));
-  });
-  const currentIdx = active.findIndex((l) => now >= startSec(l) && now < endSec(l));
-  const nextIdx = active.findIndex((l) => startSec(l) > now);
-  const focusIdx = currentIdx !== -1 ? currentIdx : nextIdx;
+  const pairs = groupPairs(active);
+  const periods = pairs.flatMap((pair, pairIndex) =>
+    pair.lessons.flatMap(lesson => periodsOf(lesson, pair.slot).map(period => ({ lesson, period, pairIndex }))),
+  );
+  // Конец урока не входит в его интервал. Ровно со звонка фокус переходит на следующий урок.
+  const index = periods.findIndex(p => endSec(p.period) > now);
+  const { lesson, period, pairIndex } = periods[index];
+  const begins = startSec(period);
+  const ends = endSec(period);
+  const teaching = now >= begins;
   const progress: DayProgress = {
-    index: currentIdx !== -1 || now >= startSec(active[0]) ? focusIdx + 1 : 0,
-    total: active.length,
+    index: now < startSec(active[0]) ? 0 : pairIndex + 1,
+    total: pairs.length,
     remainingSeconds: lastEnd - now,
-    segments,
+    segments: pairs.map(pair => clamp01((now - startSec(pair)) / (endSec(pair) - startSec(pair)))),
   };
-  const upNext = active.slice(focusIdx + 1).find((l) => startSec(l) >= endSec(active[focusIdx]));
-  const changesAt = Math.min(...active.flatMap((l) => [startSec(l), endSec(l)]).filter((s) => s > now));
-
-  if (currentIdx !== -1) {
-    const lesson = active[currentIdx];
+  const upNext = active.find(l => startSec(l) >= endSec(lesson));
+  if (teaching) {
     return {
-      today,
-      progress,
-      upNext,
-      changesAt,
-      hero: { kind: 'lesson', lesson, secondsLeft: endSec(lesson) - now, progress: segments[currentIdx] },
+      today, progress, upNext, changesAt: ends,
+      hero: {
+        kind: 'lesson', lesson, period, last: index === periods.length - 1, following: periods[index + 1],
+        secondsLeft: ends - now, progress: (now - begins) / (ends - begins),
+      },
     };
   }
-
-  const next = active[nextIdx];
-  if (nextIdx === 0) {
-    return { today, progress, upNext, changesAt, hero: { kind: 'before', first: next, secondsUntil: startSec(next) - now } };
+  if (index === 0) {
+    return { today, progress, upNext, changesAt: begins, hero: { kind: 'before', first: lesson, secondsUntil: begins - now } };
   }
-  const prevEnd = Math.max(...active.slice(0, nextIdx).map(endSec));
+  const previous = periods[index - 1];
   return {
-    today,
-    progress,
-    upNext,
-    changesAt,
-    hero: { kind: 'break', next, secondsUntil: startSec(next) - now, breakSeconds: startSec(next) - prevEnd },
+    today, progress, upNext, changesAt: begins,
+    hero: {
+      kind: 'break', next: lesson, period, withinPair: previous.pairIndex === pairIndex,
+      secondsUntil: begins - now, breakSeconds: begins - endSec(previous.period),
+    },
   };
 }
