@@ -211,6 +211,7 @@ def workspace(day: date | None = None, user=Depends(owner)):
         tasks = recovery(g, today)
         plans = optimize(g, day, ls, strategy)
         return dict(
+            username=user["username"],
             date=str(day),
             today=str(today),
             records=rows,
@@ -491,8 +492,15 @@ def period_plan(start: date, days: int = 7, user=Depends(owner)):
         return optimize_period(db, g, start, days, strategy)
 
 
+class OfflineBatch(Batch):
+    # Optional for installed clients predating automatic sync.
+    username: str | None = Field(default=None, min_length=1, max_length=80)
+
+
 @router.post("/offline/sync")
-def sync(form: Batch, user=Depends(owner)):
+def sync(form: OfflineBatch, user=Depends(owner)):
+    if form.username is not None and form.username != user["username"]:
+        raise HTTPException(409, "Офлайн-копия принадлежит другому аккаунту")
     # Drafts are immutable inserts. Retrying after losing the response is safe.
     with transaction(True) as db:
         for c in form.changes:

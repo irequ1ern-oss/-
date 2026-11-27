@@ -1,4 +1,4 @@
-import type { Change, Desk, Identity } from './client';
+import { api, type Change, type Desk, type Identity } from './client';
 const STORAGE = 'requiem.offline.v1';
 interface Box {
   salt: string;
@@ -19,8 +19,10 @@ interface Opened {
   salt: string;
   box: string;
   snapshot: Snapshot;
+  syncing?: Promise<void>;
 }
 let open: Opened | null = null;
+export const vaultChanges = new EventTarget();
 const bytes = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 function base(a: Uint8Array) {
   let out = '';
@@ -74,6 +76,7 @@ async function commit(ctx: Opened, next: Snapshot) {
   localStorage.setItem(STORAGE, box);
   ctx.snapshot = next;
   ctx.box = box;
+  vaultChanges.dispatchEvent(new Event('change'));
 }
 function snapshot(u: Identity, d: Desk, drafts: Change[]): Snapshot {
   return {
@@ -120,7 +123,7 @@ export async function unlock(pw: string) {
   }
 }
 export async function snapshotDesk(u: Identity, d: Desk) {
-  if (open?.snapshot.user === u.username)
+  if (open?.snapshot.user === u.username && d.username === u.username)
     await commit(open, snapshot(u, d, open.snapshot.drafts));
 }
 export async function writeDraft(change: Change) {
@@ -140,4 +143,23 @@ export async function clearDrafts(ids: string[]) {
 export function clearVault() {
   localStorage.removeItem(STORAGE);
   lock();
+}
+
+// Capture the unlocked vault. An account switch while a request is in flight
+// must never clear a different local user's drafts.
+export async function syncDrafts(username: string): Promise<void> {
+  const ctx = open;
+  if (!ctx || ctx.snapshot.user !== username || !ctx.snapshot.drafts.length) return;
+  if (ctx.syncing) return ctx.syncing;
+  const pending = [...ctx.snapshot.drafts];
+  const send = async () => {
+    for (let i = 0; i < pending.length && open === ctx; i += 100) {
+      const batch = pending.slice(i, i + 100);
+      await api('offline/sync', { username, changes: batch });
+      if (open === ctx) await clearDrafts(batch.map((change) => change.id));
+    }
+  };
+  ctx.syncing = send();
+  try { await ctx.syncing; }
+  finally { delete ctx.syncing; }
 }
