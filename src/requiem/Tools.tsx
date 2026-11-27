@@ -10,6 +10,7 @@ import {
   type Plan,
 } from './client';
 import { layout, Summary, type Edit } from './Desk';
+import { LastPair } from './LastPair';
 export type Runner = (fn: () => Promise<void>) => void;
 export function ArchiveList({
   d,
@@ -231,77 +232,80 @@ export function Simulator({
     };
   }, [d, skip, strategy]);
   return (
-    <div class="rq-grid">
-      <section class="rq-card">
-        <h2>Что будет, если…</h2>
-        <label>
-          Стратегия
-          <select
-            value={strategy}
-            onChange={(e) => choose(e.currentTarget.value)}
-          >
-            {d.strategies.map((s) => (
-              <option>{s}</option>
-            ))}
-            {d.records
-              .filter((r) => r.kind === 'strategy')
-              .map((r) => (
-                <option value={r.id}>{String(r.data.title)}</option>
-              ))}
-          </select>
-        </label>
-        <p>Отметь уроки, которые планируешь пропустить.</p>
-        {d.lessons.map((l) => (
-          <label class="check">
-            <input
-              type="checkbox"
-              checked={skip.includes(l.start)}
-              onChange={() =>
-                set(
-                  skip.includes(l.start)
-                    ? skip.filter((s) => s !== l.start)
-                    : [...skip, l.start],
-                )
-              }
-            />
-            {l.start} · {l.title}
-          </label>
-        ))}
-        <button
-          onClick={() =>
-            set(
-              skip.length === d.lessons.length
-                ? []
-                : d.lessons.map((l) => l.start),
-            )
-          }
-        >
-          Переключить весь день
-        </button>
-      </section>
-      <section class="rq-card">
-        <h2>Последствия</h2>
-        {plan && (
-          <>
-            <Summary p={plan} />
-            <button
-              class="primary"
-              disabled={!!plan.blocked.length}
-              onClick={() =>
-                run(async () => {
-                  await api('decide', { day: d.date, skip, strategy });
-                  await reload();
-                  report('Решение сохранено в журнале');
-                })
-              }
+    <>
+      <LastPair d={d} strategy={strategy} select={set} />
+      <div class="rq-grid">
+        <section class="rq-card">
+          <h2>Что будет, если…</h2>
+          <label>
+            Стратегия
+            <select
+              value={strategy}
+              onChange={(e) => choose(e.currentTarget.value)}
             >
-              Сохранить решение
-            </button>
-          </>
-        )}
-        {msg && <p>{msg}</p>}
-      </section>
-    </div>
+              {d.strategies.map((s) => (
+                <option>{s}</option>
+              ))}
+              {d.records
+                .filter((r) => r.kind === 'strategy')
+                .map((r) => (
+                  <option value={r.id}>{String(r.data.title)}</option>
+                ))}
+            </select>
+          </label>
+          <p>Отметь уроки, которые планируешь пропустить.</p>
+          {d.lessons.map((l) => (
+            <label class="check">
+              <input
+                type="checkbox"
+                checked={skip.includes(l.start)}
+                onChange={() =>
+                  set(
+                    skip.includes(l.start)
+                      ? skip.filter((s) => s !== l.start)
+                      : [...skip, l.start],
+                  )
+                }
+              />
+              {l.start} · {l.title}
+            </label>
+          ))}
+          <button
+            onClick={() =>
+              set(
+                skip.length === d.lessons.length
+                  ? []
+                  : d.lessons.map((l) => l.start),
+              )
+            }
+          >
+            Переключить весь день
+          </button>
+        </section>
+        <section class="rq-card">
+          <h2>Последствия</h2>
+          {plan && (
+            <>
+              <Summary p={plan} />
+              <button
+                class="primary"
+                disabled={!!plan.blocked.length}
+                onClick={() =>
+                  run(async () => {
+                    await api('decide', { day: d.date, skip, strategy });
+                    await reload();
+                    report('Решение сохранено в журнале');
+                  })
+                }
+              >
+                Сохранить решение
+              </button>
+            </>
+          )}
+          {msg && <p>{msg}</p>}
+        </section>
+      </div>
+    </>
   );
 }
 interface Report {
@@ -445,6 +449,16 @@ export function Transit({
       train: Plan['train'];
       later: Plan['train'];
       delta: number | null;
+      cutoff: number | null;
+      fallback: Plan['train'];
+      after_cutoff: number | null;
+      inbound: {
+        number: string;
+        dep: number;
+        arr: number;
+        college: number;
+        leave: number | null;
+      } | null;
     } | null>(null);
   useEffect(() => {
     let active = true;
@@ -487,20 +501,47 @@ export function Transit({
               {hm(result.train.latest)}
             </p>
             {result.train.tight && <p>Остаётся время только к посадке.</p>}
-            {result.delta !== null && result.delta > 0 && (
-              <p class="warn">
-                Если задержаться на 10 мин, на станции окажешься на{' '}
-                {result.delta} мин позже.
-              </p>
-            )}
-            {!result.later && (
-              <p>Через 10 минут подходящих рейсов в списке уже нет.</p>
+            {result.cutoff !== null && (
+              <div class="rq-scenario">
+                <strong>Последняя минута выхода · {hm(result.cutoff)}</strong>
+                {result.fallback ? (
+                  <p>
+                    При выходе с {hm(result.cutoff + 1)} следующий рейс в{' '}
+                    {hm(result.fallback.dep)}. На станции в{' '}
+                    {hm(result.fallback.arr)}
+                    {result.after_cutoff !== null && result.after_cutoff > 0
+                      ? ' · на ' + result.after_cutoff + ' мин позже'
+                      : ''}
+                    .
+                  </p>
+                ) : (
+                  <p>
+                    После этого времени в сохранённом расписании подходящих
+                    рейсов больше нет.
+                  </p>
+                )}
+              </div>
             )}
           </>
         ) : (
           <p>Подходящих рейсов на выбранную дату и время нет.</p>
         )}
       </section>
+      {result?.inbound && (
+        <section class="rq-card">
+          <h2>К первому уроку</h2>
+          <p class="rq-big">{hm(result.inbound.dep)}</p>
+          <p>
+            Рейс {result.inbound.number} · прибытие на вокзал{' '}
+            {hm(result.inbound.arr)} · в колледже {hm(result.inbound.college)}.
+          </p>
+          <small>
+            {result.inbound.leave === null
+              ? 'Время выхода из дома появится после ввода пути до станции.'
+              : 'Комфортный выход из дома в ' + hm(result.inbound.leave)}
+          </small>
+        </section>
+      )}
       <section class="rq-card">
         <h2>Импорт рейсов</h2>
         {source?.enabled && (

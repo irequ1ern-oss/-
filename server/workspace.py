@@ -24,6 +24,7 @@ from .engine import (
     VERSION,
 )
 from .models import MODELS, Model, Clock
+from .departure import connections, last_pair_options
 
 router = APIRouter(prefix="/api")
 KEY = r"^[A-Za-z0-9_.:-]{1,100}$"
@@ -428,13 +429,14 @@ def admin_day(day: date, user=Depends(admin)):
 def transit(day: date, release: Clock, user=Depends(owner)):
     with transaction() as db:
         g = group(records(db, user["id"]))
-        first = train_after(g, day, minute(release))
-        later = train_after(g, day, minute(release) + 10)
-        return dict(
-            train=first,
-            later=later,
-            delta=later["arr"] - first["arr"] if first and later else None,
-        )
+        return connections(g, day, minute(release), lessons(db, day))
+
+
+@router.get("/last-pair")
+def compare_departure(day: date, strategy: str = "Balance", user=Depends(owner)):
+    with transaction() as db:
+        g = group(records(db, user["id"]))
+        return last_pair_options(g, day, lessons(db, day), strategy_for(g, strategy))
 
 
 class ImportTrips(Model):
