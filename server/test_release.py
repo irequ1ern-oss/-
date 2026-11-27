@@ -53,6 +53,11 @@ class ReleaseTests(unittest.TestCase):
             "version": 0,
             "data": {"title": "one", "due": "2026-11-07"},
         }
+        self.assertEqual(
+            self.c.post("/api/offline/sync", json={"username": "different", "changes": [change]}).status_code,
+            409,
+        )
+        self.assertEqual(self.c.get("/api/workspace").json()["records"], [])
         for _ in range(2):
             self.assertEqual(
                 self.c.post(

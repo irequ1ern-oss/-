@@ -87,6 +87,7 @@ export interface Stat {
   };
 }
 export interface Desk {
+  username: string;
   date: string;
   today: string;
   records: Entry[];

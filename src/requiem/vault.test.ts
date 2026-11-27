@@ -27,6 +27,7 @@ it('keeps a dated snapshot and pending offline task encrypted across restarts', 
     admin: false,
   };
   const desk = {
+    username: owner.username,
     date: '2026-11-25',
     lessons: [],
     tasks: [],

@@ -32,7 +32,7 @@ import {
 } from './Tools';
 import { MemoryReview, ResourceSearch } from './Resources';
 import { Offline } from './Offline';
-import { lock } from './vault';
+import { lock, opened, syncDrafts } from './vault';
 import { PushControl } from './PushControl';
 import { Shay } from './Shay';
 import '../ui/fonts.css';
@@ -233,8 +233,18 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
     if (!u.owner) return;
     const id = ++rev.current;
     const data = await api<Desk>('workspace?day=' + day);
-    if (id === rev.current) set(data);
-  }, [day, u.owner]);
+    if (id !== rev.current) return;
+    if (data.username !== u.username) {
+      window.dispatchEvent(new Event('session-ended'));
+      return;
+    }
+    set(data);
+    if (opened()?.user === u.username && opened()?.drafts.length) {
+      await syncDrafts(u.username);
+      const fresh = await api<Desk>('workspace?day=' + day);
+      if (id === rev.current && fresh.username === u.username) set(fresh);
+    }
+  }, [day, u.owner, u.username]);
   useEffect(() => {
     set(null);
     void run(reload);
@@ -671,15 +681,25 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
 function Root() {
   const [user, change] = useState<Identity | null | undefined>(undefined);
   useEffect(() => {
-    api<Identity>('session')
-      .then(change)
-      .catch(() => change(null));
+    let active = true;
+    const restore = async () => {
+      try {
+        const identity = await api<Identity>('session');
+        if (!active) return;
+        if (opened() && opened()?.user !== identity.username) lock();
+        change(identity);
+      } catch {
+        if (active) change(current => current === undefined ? null : current);
+      }
+    };
+    void restore();
+    addEventListener('online', restore);
     const reset = () => {
       lock();
       change(null);
     };
     addEventListener('session-ended', reset);
-    return () => removeEventListener('session-ended', reset);
+    return () => { active = false; removeEventListener('online', restore); removeEventListener('session-ended', reset); };
   }, []);
   useEffect(() => {
     document.title = user?.owner ? 'Requiem' : 'Аккаунт · Учёба';
@@ -688,6 +708,7 @@ function Root() {
     <div class="login">Проверка сессии…</div>
   ) : user ? (
     <Account
+      key={user.username}
       u={user}
       logout={() => {
         lock();
@@ -698,7 +719,7 @@ function Root() {
   ) : (
     <Login
       onLogin={(u) => {
-        lock();
+        if (opened()?.user !== u.username) lock();
         change(u);
       }}
     />

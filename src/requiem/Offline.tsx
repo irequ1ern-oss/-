@@ -1,7 +1,8 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { api, type Desk, type Identity } from './client';
 import {
-  clearDrafts,
+  syncDrafts,
+  vaultChanges,
   clearVault,
   createVault,
   hasVault,
@@ -27,6 +28,11 @@ export function Offline({
     [title, task] = useState(''),
     [remove, ask] = useState(false),
     [busy, set] = useState(false);
+  useEffect(() => {
+    const refresh = () => show(opened());
+    vaultChanges.addEventListener('change', refresh);
+    return () => vaultChanges.removeEventListener('change', refresh);
+  }, []);
   async function act(fn: () => Promise<void>) {
     set(true);
     say('');
@@ -56,6 +62,7 @@ export function Offline({
                   lock();
                   throw Error('Копия другого аккаунта');
                 }
+                if (u && navigator.onLine && s.drafts.length) await reload?.();
               } else if (u && d) {
                 await navigator.serviceWorker.register('/account/worker.js', {
                   scope: '/account/',
@@ -143,10 +150,7 @@ export function Offline({
               disabled={busy}
               onClick={() =>
                 act(async () => {
-                  if (snap.drafts.length) {
-                    await api('offline/sync', { changes: snap.drafts });
-                    await clearDrafts(snap.drafts.map((x) => x.id));
-                  }
+                  await syncDrafts(u.username);
                   const fresh = await api<Desk>('workspace?day=' + d.date);
                   await snapshotDesk(u, fresh);
                   await reload?.();
