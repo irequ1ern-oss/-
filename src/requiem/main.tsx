@@ -129,7 +129,16 @@ function Login({ onLogin }: { onLogin: (u: Identity) => void }) {
         <button class="primary" disabled={busy}>
           {activate ? 'Создать аккаунт' : 'Войти'}
         </button>
-        <a href="/#/settings">Вернуться к расписанию</a>
+        <a
+          href={
+            new URLSearchParams(location.search).get('from') === 'pages' &&
+            location.hostname === 'requiem-api-production.up.railway.app'
+              ? 'https://irequ1ern-oss.github.io/-/#/settings'
+              : '/#/settings'
+          }
+        >
+          Вернуться к расписанию
+        </a>
       </form>
       <Offline />
     </div>
@@ -190,6 +199,7 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
     [error, fail] = useState(''),
     [busy, work] = useState(false);
   const rev = useRef(0);
+  const [assistantPanel, showAssistant] = useState(false);
   const [editor, open] = useState<{
       kind: string;
       id?: string;
@@ -297,7 +307,8 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
       class={
         'rq-shell' +
         (config?.compact ? ' compact' : '') +
-        (config?.reduced_motion ? ' still' : '')
+        (config?.reduced_motion ? ' still' : '') +
+        (assistantPanel && selected !== 'shay' ? ' has-assistant' : '')
       }
     >
       <aside class="rq-side">
@@ -320,6 +331,15 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
                   if (e.currentTarget.value) date(e.currentTarget.value);
                 }}
               />
+            )}
+            {u.owner && selected !== 'shay' && (
+              <button
+                class="rq-assistant-toggle"
+                aria-expanded={assistantPanel}
+                onClick={() => showAssistant((v) => !v)}
+              >
+                Shay
+              </button>
             )}
             <button onClick={() => search(true)} aria-label="Поиск и команды">
               Поиск <kbd>⌘ K</kbd>
@@ -565,6 +585,12 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
           </>
         )}
       </div>
+      {assistantPanel && selected !== 'shay' && u.owner && d && (
+        <aside class="rq-assistant-panel" aria-label="Ассистент">
+          <button onClick={() => showAssistant(false)}>Закрыть панель</button>
+          <Shay edit={edit} reload={reload} />
+        </aside>
+      )}
       <nav class="rq-bottom" aria-label="Быстрая навигация">
         {valid.slice(0, 4).map((k) => (
           <button

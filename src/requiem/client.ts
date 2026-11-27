@@ -104,11 +104,11 @@ export interface Desk {
   strategies: string[];
   schemas: Record<string, Schema>;
 }
-export async function api<T>(
+export async function apiResponse(
   path: string,
   body?: unknown,
   signal?: AbortSignal,
-): Promise<T> {
+): Promise<Response> {
   let r: Response;
   try {
     r = await fetch('/api/' + path, {
@@ -125,8 +125,8 @@ export async function api<T>(
       'Связь с сервером прервалась. Введённые данные остаются в открытой форме.',
     );
   }
-  const payload = await r.json().catch(() => null);
   if (!r.ok) {
+    const payload = await r.json().catch(() => null);
     if (r.status === 401 && !['session', 'login'].includes(path))
       window.dispatchEvent(new Event('session-ended'));
     throw new Error(
@@ -135,7 +135,15 @@ export async function api<T>(
         : 'Сервер не смог обработать запрос',
     );
   }
-  return payload;
+  return r;
+}
+export async function api<T>(
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
+  const response = await apiResponse(path, body, signal);
+  return response.json();
 }
 export const hm = (m: number | null | undefined) =>
   m == null
