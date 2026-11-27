@@ -19,6 +19,15 @@ def check(page, context, origin, database, code):
     phrase = secrets.token_urlsafe(20)
     username = "browser-fixture"
     errors = []
+    sync_responses = []
+    page.on(
+        "response",
+        lambda r: (
+            sync_responses.append(r.status)
+            if r.url.endswith("/api/offline/sync")
+            else None
+        ),
+    )
     page.on("pageerror", lambda exc: errors.append(str(exc)))
     page.goto(origin + "/account/#activate")
     page.get_by_label("Одноразовый код из Railway").fill(code)
@@ -98,6 +107,7 @@ def check(page, context, origin, database, code):
     expect(nav).to_be_visible()
     nav.get_by_role("button", name="Настройки", exact=True).click()
     expect(page.get_by_text("Черновиков на устройстве · 0")).to_be_visible()
+    assert sync_responses == [200], sync_responses
     page.get_by_role("button", name="Синхронизировать", exact=True).click()
     expect(page.get_by_text("Копия и черновики синхронизированы")).to_be_visible()
     with sqlite3.connect(database) as db:

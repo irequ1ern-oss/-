@@ -22,7 +22,14 @@ interface Opened {
   syncing?: Promise<void>;
 }
 let open: Opened | null = null;
-export const vaultChanges = new EventTarget();
+const vaultChanges = new EventTarget();
+export function subscribeVault(callback: () => void) {
+  vaultChanges.addEventListener('change', callback);
+  return () => vaultChanges.removeEventListener('change', callback);
+}
+function changed() {
+  vaultChanges.dispatchEvent(new Event('change'));
+}
 const bytes = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 function base(a: Uint8Array) {
   let out = '';
@@ -38,6 +45,7 @@ export function hasVault() {
 }
 export function lock() {
   open = null;
+  changed();
 }
 export function opened() {
   return open?.snapshot ?? null;
@@ -76,7 +84,7 @@ async function commit(ctx: Opened, next: Snapshot) {
   localStorage.setItem(STORAGE, box);
   ctx.snapshot = next;
   ctx.box = box;
-  vaultChanges.dispatchEvent(new Event('change'));
+  changed();
 }
 function snapshot(u: Identity, d: Desk, drafts: Change[]): Snapshot {
   return {
@@ -103,6 +111,7 @@ export async function createVault(pw: string, u: Identity, d: Desk) {
   };
   await commit(ctx, next);
   open = ctx;
+  changed();
 }
 export async function unlock(pw: string) {
   const raw = localStorage.getItem(STORAGE);
@@ -117,6 +126,7 @@ export async function unlock(pw: string) {
     );
     const snapshot = JSON.parse(new TextDecoder().decode(data)) as Snapshot;
     open = { key, salt: box.salt, box: raw, snapshot };
+    changed();
     return snapshot;
   } catch {
     throw Error('Не удалось открыть копию. Проверь фразу.');
@@ -149,7 +159,8 @@ export function clearVault() {
 // must never clear a different local user's drafts.
 export async function syncDrafts(username: string): Promise<void> {
   const ctx = open;
-  if (!ctx || ctx.snapshot.user !== username || !ctx.snapshot.drafts.length) return;
+  if (!ctx || ctx.snapshot.user !== username || !ctx.snapshot.drafts.length)
+    return;
   if (ctx.syncing) return ctx.syncing;
   const pending = [...ctx.snapshot.drafts];
   const send = async () => {
@@ -160,6 +171,9 @@ export async function syncDrafts(username: string): Promise<void> {
     }
   };
   ctx.syncing = send();
-  try { await ctx.syncing; }
-  finally { delete ctx.syncing; }
+  try {
+    await ctx.syncing;
+  } finally {
+    delete ctx.syncing;
+  }
 }
