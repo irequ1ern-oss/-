@@ -152,7 +152,11 @@ export const hm = (m: number | null | undefined) =>
     : String(Math.floor((((m % 1440) + 1440) % 1440) / 60)).padStart(2, '0') +
       ':' +
       String(((m % 60) + 60) % 60).padStart(2, '0') +
-      (m >= 1440 ? ' +1' : '');
+      (m >= 1440
+        ? ' +' + Math.floor(m / 1440)
+        : m < 0
+          ? ' ' + Math.floor(m / 1440)
+          : '');
 export const mins = (m: number | null) =>
   m === null ? 'нет данных' : m + ' мин';
 export const titles: Record<string, string> = {

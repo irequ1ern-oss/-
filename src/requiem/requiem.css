@@ -641,3 +641,14 @@ pre {
     margin-bottom: 1rem;
   }
 }
+
+.rq-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+}
+.rq-choices summary {
+  cursor: pointer;
+  color: var(--rose);
+  margin-bottom: 0.7rem;
+}

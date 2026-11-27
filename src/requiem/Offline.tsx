@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useState } from 'preact/hooks';
+import { useSyncExternalStore } from 'preact/compat';
 import { api, type Desk, type Identity } from './client';
 import {
   syncDrafts,
-  vaultChanges,
+  subscribeVault,
   clearVault,
   createVault,
   hasVault,
@@ -24,21 +25,15 @@ export function Offline({
 }) {
   const [pw, phrase] = useState(''),
     [msg, say] = useState(''),
-    [snap, show] = useState(opened()),
     [title, task] = useState(''),
     [remove, ask] = useState(false),
     [busy, set] = useState(false);
-  useEffect(() => {
-    const refresh = () => show(opened());
-    vaultChanges.addEventListener('change', refresh);
-    return () => vaultChanges.removeEventListener('change', refresh);
-  }, []);
+  const snap = useSyncExternalStore(subscribeVault, opened);
   async function act(fn: () => Promise<void>) {
     set(true);
     say('');
     try {
       await fn();
-      show(opened());
       phrase('');
     } catch (e) {
       say((e as Error).message);
@@ -164,7 +159,6 @@ export function Offline({
           <button
             onClick={() => {
               lock();
-              show(null);
             }}
           >
             Закрыть копию
@@ -179,7 +173,6 @@ export function Offline({
               return;
             }
             clearVault();
-            show(null);
             ask(false);
           }}
         >
