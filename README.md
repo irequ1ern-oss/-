@@ -132,3 +132,7 @@ scripts/gen-icons.mjs     какие иконки Phosphor попадают в �
 
 Стек: Vite, Preact, TypeScript, vite-plugin-pwa, Vitest.
 Время всегда считается по Europe/Moscow, даже если на устройстве стоит другой часовой пояс.
+
+## Серверная версия и разработка Requiem
+
+[Аудит и архитектура](docs/requiem/ARCHITECTURE.md) · [Состояние модулей и проверок](docs/requiem/IMPLEMENTATION_STATUS.md) · [Развёртывание и первый вход](docs/requiem/OPERATIONS.md).

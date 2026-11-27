@@ -34,6 +34,8 @@ jobs:
       - run: npm run build
         env:
           # Сайт живёт по адресу https://<логин>.github.io/<репозиторий>/
+          ACCOUNT_URL: ${{ vars.ACCOUNT_URL || (github.repository == 'irequ1ern-oss/-' && 'https://requiem-api-production.up.railway.app/account/?from=pages') || '' }}
+          PUBLIC_CALENDAR_URL: ${{ vars.PUBLIC_CALENDAR_URL || (github.repository == 'irequ1ern-oss/-' && 'https://requiem-api-production.up.railway.app/api/calendar') || '' }}
           BASE_PATH: ${{ steps.pages.outputs.base_path }}/
       - uses: actions/upload-pages-artifact@v5
         with:

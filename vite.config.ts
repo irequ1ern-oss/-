@@ -63,7 +63,7 @@ const previewWithoutManifest: Plugin = {
   transformIndexHtml: {
     order: 'post',
     handler(html, ctx) {
-      return ctx.path.includes('/preview/') ? html.replace(/\s*<link rel="manifest"[^>]*>/, '') : html;
+      return (ctx.path.includes('/preview/') || ctx.path.includes('/account/')) ? html.replace(/\s*<link rel="manifest"[^>]*>/, '') : html;
     },
   },
 };
@@ -77,6 +77,7 @@ export default defineConfig({
       // Приложение + страницы превью дизайна (preview/ — не кешируются для офлайна).
       input: {
         main: page('./index.html'),
+        ...(process.env.ACCOUNT_HOSTED === '1' ? { account: page('./account/index.html') } : {}),
         preview: page('./preview/index.html'),
         previewApp: page('./preview/app.html'),
       },
@@ -84,6 +85,8 @@ export default defineConfig({
   },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    __ACCOUNT_URL__: JSON.stringify(process.env.ACCOUNT_HOSTED === '1' ? '/account/' : (process.env.ACCOUNT_URL || '')),
+    __CALENDAR_URL__: JSON.stringify(process.env.ACCOUNT_HOSTED === '1' ? '/api/calendar' : (process.env.PUBLIC_CALENDAR_URL || '')),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
   plugins: [
@@ -115,9 +118,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
         // Превью дизайна всегда грузится из сети и не попадает в офлайн-кеш приложения.
-        globIgnores: ['preview/**'],
+        globIgnores: ['preview/**','account/**'],
         // И /preview/…, и /preview без косой черты (иначе service worker откроет вместо превью приложение).
-        navigateFallbackDenylist: [/\/preview(?:[/?]|$)/],
+        navigateFallbackDenylist: [/\/(account|api)(?:[/?]|$)/,/\/preview(?:[/?]|$)/],
         manifestTransforms: [
           async (entries) => {
             const keep = appAssets();

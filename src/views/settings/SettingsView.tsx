@@ -54,7 +54,7 @@ const go = (path: string[]) => navigate({ tab: 'settings', path });
 
 function SettingsRoot({ back }: { back?: BackInfo }) {
   const settings = useSettings();
-  const { main } = useAppData();
+  const { main, demo } = useAppData();
   const roomsNote = subgroupRoomsNote(subjectsWithSubgroupRooms(main).map((id) => subjectView(id, main, settings).short));
 
   return (
@@ -76,6 +76,8 @@ function SettingsRoot({ back }: { back?: BackInfo }) {
             }
           />
         </Group>
+
+        {__ACCOUNT_URL__ && !demo && <Group><Cell icon={<IconTile name="user" color="blue" />} title="Аккаунт" accessory="chevron" onClick={() => location.assign(__ACCOUNT_URL__)} /></Group>}
 
         <Group header="Оформление" footer="AMOLED — чисто чёрный фон, бережёт батарею на OLED-экране.">
           <Cell
