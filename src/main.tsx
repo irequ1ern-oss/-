@@ -6,6 +6,7 @@ import './ui/fonts.css';
 import './ui/tokens.css';
 import './ui/base.css';
 import { mainSchedule, mainScheduleErrors, scheduleSources } from './data/schedule';
+import { watchCalendar, watchSubjects } from './data/calendar';
 import { initSettings } from './state/settings';
 import { AppShell } from './shell/AppShell';
 import { clockFromUrl } from './shell/clock';
@@ -18,7 +19,23 @@ initSettings();
 // Дневник пользователя загружается с устройства после запуска.
 const data: AppData = { main: mainSchedule, src: scheduleSources, homework: [], events: [], demo: false };
 
-render(<AppShell data={data} clock={clockFromUrl()} />, document.getElementById('app')!);
+const clock = clockFromUrl();
+const draw = (current: AppData) => render(<AppShell data={current} clock={clock} />, document.getElementById('app')!);
+draw(data);
+if (__CALENDAR_URL__) {
+  let current = data;
+  const updatedMain = { ...mainSchedule };
+  watchSubjects(__CALENDAR_URL__, mainSchedule, subjects => {
+    updatedMain.subjects = subjects;
+    current = { ...current, main: updatedMain, src: { ...current.src, main: updatedMain } };
+    draw(current);
+    window.dispatchEvent(new Event('public-catalog-updated'));
+  });
+  watchCalendar(__CALENDAR_URL__, updatedMain, periods => {
+    current = { ...current, src: { ...current.src, periods } };
+    draw(current);
+  });
+}
 setupPwa();
 
 if (mainScheduleErrors.length) {

@@ -1,3 +1,4 @@
+import bellGrid from '../../data/bells.json';
 // Звонки группы 218. Строки расписания могут занимать целую пару или один её урок.
 import type { Lesson } from './schedule';
 
@@ -9,12 +10,7 @@ interface BellPair {
   end: string;
 }
 
-export const BELL_PAIRS: readonly BellPair[] = [
-  { number: 1, start: '09:00', pause: '09:45', resume: '09:55', end: '10:40' },
-  { number: 2, start: '10:50', pause: '11:35', resume: '11:55', end: '12:40' },
-  { number: 3, start: '13:00', pause: '13:45', resume: '13:55', end: '14:40' },
-  { number: 4, start: '14:50', pause: '15:35', resume: '15:45', end: '16:30' },
-];
+export const BELL_PAIRS: readonly BellPair[] = bellGrid;
 
 export function bellPair({ start, end }: Pick<Lesson, 'start' | 'end'>) {
   return BELL_PAIRS.find(p =>

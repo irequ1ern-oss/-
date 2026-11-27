@@ -1,0 +1,9 @@
+.git
+node_modules
+dist
+dev-dist
+*.log
+.env*
+var
+**/__pycache__
+*.sqlite3*
