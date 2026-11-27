@@ -79,10 +79,10 @@ export function LastPair({
               const unknown = samples.some(
                 (s) => !s.total || s.remaining === null,
               );
-              const verdict = !samples.every((s) => s.total)
-                ? 'Мало отметок для оценки'
-                : plan.blocked.length
-                  ? 'Лучше прийти'
+              const verdict = plan.blocked.length
+                ? 'Лучше прийти'
+                : !samples.every((s) => s.total)
+                  ? 'Мало отметок для оценки'
                   : plan.net === null
                     ? 'Не хватает данных о дороге'
                     : plan.net <= 0

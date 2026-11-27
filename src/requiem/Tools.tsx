@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'preact/hooks';
+import { Choice, strategies } from './Choice';
+import { DatePicker } from '../ui/DatePicker';
+import { dayPresets, trainPresets } from './studyInsights';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { addDays, moscowClock } from '../core/time';
 import {
   api,
@@ -211,11 +214,18 @@ export function Simulator({
   run: Runner;
   reload: () => Promise<void>;
 }) {
+  const result = useRef<HTMLElement>(null);
+  const presets = dayPresets(d.lessons);
+  const trains = trainPresets(d);
   const pref = layout(d),
     [skip, set] = useState<string[]>([]),
     [strategy, choose] = useState(pref.strategy),
     [plan, show] = useState<Plan | null>(null),
     [msg, report] = useState('');
+  const saving = useRef(false);
+  const [savingPlan, setSavingPlan] = useState(false);
+  const [savedKey, setSavedKey] = useState('');
+  const planKey = JSON.stringify([d.date, [...skip].sort(), strategy]);
   useEffect(() => {
     let active = true;
     show(null);
@@ -233,78 +243,124 @@ export function Simulator({
   }, [d, skip, strategy]);
   return (
     <>
-      <LastPair d={d} strategy={strategy} select={set} />
       <div class="rq-grid">
         <section class="rq-card">
-          <h2>Что будет, если…</h2>
-          <label>
-            Стратегия
-            <select
-              value={strategy}
-              onChange={(e) => choose(e.currentTarget.value)}
-            >
-              {d.strategies.map((s) => (
-                <option>{s}</option>
+          <h2>Как провести день</h2>
+          {presets.length ? (
+            <div class="rq-presets" aria-label="Готовые сценарии">
+              {presets.map((p) => (
+                <button
+                  key={p.title}
+                  aria-pressed={
+                    p.starts.length === skip.length &&
+                    p.starts.every((t) => skip.includes(t))
+                  }
+                  onClick={() => set(p.starts)}
+                >
+                  {p.title}
+                </button>
               ))}
-              {d.records
-                .filter((r) => r.kind === 'strategy')
-                .map((r) => (
-                  <option value={r.id}>{String(r.data.title)}</option>
-                ))}
-            </select>
-          </label>
-          <p>Отметь уроки, которые планируешь пропустить.</p>
-          {d.lessons.map((l) => (
-            <label class="check">
-              <input
-                type="checkbox"
-                checked={skip.includes(l.start)}
-                onChange={() =>
-                  set(
-                    skip.includes(l.start)
-                      ? skip.filter((s) => s !== l.start)
-                      : [...skip, l.start],
-                  )
-                }
-              />
-              {l.start} · {l.title}
-            </label>
-          ))}
-          <button
-            onClick={() =>
-              set(
-                skip.length === d.lessons.length
-                  ? []
-                  : d.lessons.map((l) => l.start),
-              )
-            }
-          >
-            Переключить весь день
-          </button>
+            </div>
+          ) : (
+            <p>На этот день занятий нет. Выбери другую дату для сравнения.</p>
+          )}
+          {trains.length > 0 && (
+            <details class="scenario-detail">
+              <summary>Подобрать уроки под электричку</summary>
+              {trains.map((t) => (
+                <button class="line" key={t.id} onClick={() => set(t.starts)}>
+                  {hm(t.departure)} · № {t.number}
+                  <small>
+                    Выйти до {hm(t.leave)} · пропустить уроков:{' '}
+                    {t.starts.length}
+                  </small>
+                </button>
+              ))}
+              <small>
+                По рейсам на выбранную дату и твоему запасу до посадки. Расчёт
+                ниже подберёт ближайший подходящий рейс.
+              </small>
+            </details>
+          )}
+          <div class="rq-date-field">
+            <span>Стратегия расчёта</span>
+            <Choice
+              title="Стратегия расчёта"
+              value={strategy}
+              options={strategies(d)}
+              change={choose}
+            />
+          </div>
+          {d.lessons.length > 0 && (
+            <details class="scenario-detail">
+              <summary>Выбрать отдельные уроки · {skip.length}</summary>
+              {d.lessons.map((l) => (
+                <label class="check">
+                  <input
+                    type="checkbox"
+                    checked={skip.includes(l.start)}
+                    onChange={() =>
+                      set(
+                        skip.includes(l.start)
+                          ? skip.filter((s) => s !== l.start)
+                          : [...skip, l.start],
+                      )
+                    }
+                  />
+                  {l.start} · {l.title}
+                </label>
+              ))}
+            </details>
+          )}
         </section>
-        <section class="rq-card">
+        <section class="rq-card" ref={result} aria-live="polite">
           <h2>Последствия</h2>
           {plan && (
             <>
-              <Summary p={plan} />
+              <Summary p={plan} subjects={d.subjects} />
               <button
                 class="primary"
-                disabled={!!plan.blocked.length}
+                disabled={
+                  !!plan.blocked.length ||
+                  !d.lessons.length ||
+                  savingPlan ||
+                  savedKey === planKey
+                }
                 onClick={() =>
                   run(async () => {
-                    await api('decide', { day: d.date, skip, strategy });
-                    await reload();
-                    report('Решение сохранено в журнале');
+                    if (saving.current || savedKey === planKey) return;
+                    saving.current = true;
+                    setSavingPlan(true);
+                    try {
+                      await api('decide', { day: d.date, skip, strategy });
+                      setSavedKey(planKey);
+                      await reload();
+                    } finally {
+                      saving.current = false;
+                      setSavingPlan(false);
+                    }
                   })
                 }
               >
-                Сохранить решение
+                {savedKey === planKey
+                  ? 'Решение сохранено'
+                  : savingPlan
+                    ? 'Сохранение…'
+                    : 'Сохранить решение'}
               </button>
             </>
           )}
           {msg && <p>{msg}</p>}
         </section>
       </div>
+      <LastPair
+        d={d}
+        strategy={strategy}
+        select={(starts) => {
+          set(starts);
+          result.current?.scrollIntoView({ block: 'start' });
+        }}
+      />
     </>
   );
 }
@@ -326,6 +382,7 @@ export function Reports({ d, run }: { d: Desk; run: Runner }) {
   useEffect(() => {
     let active = true;
     run(async () => {
+      show(null);
       const v = await api<Report>('report?start=' + start + '&end=' + end);
       if (active) show(v);
     });
@@ -358,28 +415,30 @@ export function Reports({ d, run }: { d: Desk; run: Runner }) {
             <option value={v}>{t}</option>
           ))}
         </select>
-        <input
-          aria-label="От"
-          type="date"
-          value={start}
-          onChange={(e) => {
-            if (e.currentTarget.value) {
+        <div class="rq-date-field">
+          <span>От</span>
+          <DatePicker
+            label="От"
+            value={start}
+            max={end}
+            onChange={(v) => {
               setRange('custom');
-              from(e.currentTarget.value);
-            }
-          }}
-        />
-        <input
-          aria-label="До"
-          type="date"
-          value={end}
-          onChange={(e) => {
-            if (e.currentTarget.value) {
+              from(v);
+            }}
+          />
+        </div>
+        <div class="rq-date-field">
+          <span>До</span>
+          <DatePicker
+            label="До"
+            value={end}
+            min={start}
+            onChange={(v) => {
               setRange('custom');
-              to(e.currentTarget.value);
-            }
-          }}
-        />
+              to(v);
+            }}
+          />
+        </div>
       </div>
       {report && (
         <>
@@ -748,6 +807,7 @@ export function Admin({ run }: { run: Runner }) {
   useEffect(() => {
     let active = true;
     v(-1);
+    write('');
     say('');
     ask(false);
     run(async () => {
@@ -766,22 +826,24 @@ export function Admin({ run }: { run: Runner }) {
   return (
     <section class="rq-card">
       <h2>Расписание группы</h2>
-      <label>
-        Дата
-        <input
-          type="date"
+      <div class="rq-date-field">
+        <span>Дата изменения</span>
+        <DatePicker
+          label="Дата изменения расписания"
           value={day}
-          onChange={(e) => {
-            if (e.currentTarget.value) set(e.currentTarget.value);
+          onChange={(v) => {
+            ask(false);
+            set(v);
           }}
         />
-      </label>
+      </div>
       <p>
         Пустой список отменяет учебный день. Изменения действуют для всей
         группы.
       </p>
       <textarea
         aria-label="Занятия в JSON"
+        disabled={version < 0}
         rows={14}
         value={text}
         onInput={(e) => {
@@ -864,12 +926,24 @@ export function Oracle({ d, run }: { d: Desk; run: Runner }) {
         <p>Уведомлений пока нет.</p>
       )}
       <h2>Проверить правило</h2>
-      <input
-        type="datetime-local"
-        aria-label="Тестовое время МСК"
-        value={at}
-        onChange={(e) => time(e.currentTarget.value)}
-      />
+      <div class="inline">
+        <DatePicker
+          label="Дата проверки правила"
+          value={at.slice(0, 10)}
+          onChange={(v) => time(v + 'T' + (at.slice(11) || '05:40'))}
+        />
+        <label>
+          Время МСК
+          <input
+            type="time"
+            aria-label="Тестовое время МСК"
+            value={at.slice(11)}
+            onChange={(e) =>
+              time(at.slice(0, 10) + 'T' + e.currentTarget.value)
+            }
+          />
+        </label>
+      </div>
       {d.records
         .filter((r) => r.kind === 'rule')
         .map((r) => (

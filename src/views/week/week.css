@@ -238,3 +238,6 @@
 .week-panel > .empty-state:last-child {
   margin-bottom: 0;
 }
+
+.week-calendar { display:flex; justify-content:flex-end; margin-bottom:var(--space-2); }
+.week-calendar .date-trigger,.study-date .date-trigger {border:1px solid var(--separator);background:var(--surface);color:var(--label);border-radius:var(--r-pill);padding-inline:var(--space-3);}

@@ -1,3 +1,4 @@
+import { DatePicker } from '../ui/DatePicker';
 import { Files } from './Resources';
 import { useState } from 'preact/hooks';
 import {
@@ -145,6 +146,18 @@ export function Editor({
                   {label}
                 </label>
               );
+            if (spec.format === 'date')
+              return (
+                <div class="rq-date-field" key={k}>
+                  <span>{label}</span>
+                  <DatePicker
+                    label={label}
+                    value={String(val ?? '')}
+                    clearable={!required}
+                    onChange={(v) => setField(k, v || null)}
+                  />
+                </div>
+              );
             const numeric = ['integer', 'number'].includes(spec.type ?? '');
             if (['text', 'prompt', 'note'].includes(k))
               return (
@@ -163,13 +176,11 @@ export function Editor({
                 {label}
                 <input
                   type={
-                    spec.format === 'date'
-                      ? 'date'
-                      : numeric
-                        ? 'number'
-                        : spec.pattern?.includes('2[0-3]')
-                          ? 'time'
-                          : 'text'
+                    numeric
+                      ? 'number'
+                      : spec.pattern?.includes('2[0-3]')
+                        ? 'time'
+                        : 'text'
                   }
                   value={String(val ?? '')}
                   step={spec.type === 'number' ? 'any' : undefined}
