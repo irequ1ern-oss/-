@@ -1,0 +1,406 @@
+/* Shared calendar takes its tokens from the current interface. */
+.rq-shell .date-panel {
+  --sheet-bg: #211e25;
+  --label: var(--ink);
+  --label-2: var(--muted);
+  --label-3: #a99ba5;
+  --overlay: #09080ba8;
+  --accent: var(--rose);
+  --accent-fill: #872744;
+  --surface-2: #332d35;
+  --separator: var(--line);
+  --on-accent: white;
+  --shadow-float: 0 18px 90px #0008;
+  --fs-body: 1rem;
+  --fs-title3: 1.22rem;
+  --fs-footnote: 0.8rem;
+  --fs-callout: 0.9rem;
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
+}
+.rq-side nav button,
+.journal-bulk,
+.menu-links button {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+.rq-date-field {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.3rem 0;
+}
+.rq-date-field > span,
+.subtle,
+.study-stats > small {
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+.rq-segment {
+  display: flex;
+  gap: 3px;
+  background: #100f13;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 4px;
+  width: fit-content;
+  max-width: 100%;
+}
+.rq-segment button {
+  flex: 1;
+  min-height: 40px;
+  background: transparent;
+  border: 0;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.rq-segment button[aria-pressed='true'],
+.rq-presets button[aria-pressed='true'],
+.mark-options button[aria-pressed='true'] {
+  background: #4a2735;
+  color: #ffe5ee;
+  box-shadow: inset 0 0 0 1px #c066823d;
+}
+.academy-tabs {
+  margin-bottom: 0.9rem;
+}
+.rq-sheet {
+  width: min(32rem, 94vw);
+  overscroll-behavior: contain;
+}
+.rq-sheet > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.rq-sheet > header > button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+}
+.menu-config {
+  width: 100%;
+  min-height: 44px;
+}
+.menu-group {
+  margin-top: 1.15rem;
+}
+.menu-group h3 {
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.5;
+  font-family: inherit;
+  font-size: 0.85rem;
+  margin: 0 0 0.45rem;
+}
+.menu-links,
+.mark-options,
+.rq-presets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+.menu-links button,
+.mark-options button,
+.rq-presets button,
+.journal-bulk {
+  min-height: 44px;
+  text-align: left;
+}
+.menu-links button {
+  padding: 0.6rem;
+  font-size: 0.9rem;
+}
+.menu-links svg,
+.rq-side svg {
+  flex-shrink: 0;
+  color: var(--rose);
+}
+.menu-links small {
+  margin-left: auto;
+  color: var(--rose);
+}
+.journal-bulk {
+  border-color: #8a4a61;
+  background: #4a2031;
+}
+.journal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border-top: 1px solid var(--line);
+  padding: 0.8rem 0;
+}
+.journal-row:first-of-type {
+  margin-top: 0.7rem;
+}
+.journal-row strong {
+  display: block;
+  font-size: 0.98rem;
+  line-height: 1.35;
+  margin-top: 0.2rem;
+  overflow-wrap: anywhere;
+}
+.journal-row small,
+.study-bars small,
+.study-numbers small {
+  color: var(--muted);
+}
+.mark-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+.mark-actions button {
+  min-height: 44px;
+  font-size: 0.85rem;
+}
+.mark-actions button[data-status='present'] {
+  color: var(--mint);
+}
+.mark-actions button[data-status='absent'] {
+  color: var(--rose);
+}
+.mark-actions button[data-status='late'] {
+  color: var(--amber);
+}
+.study-rate {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0;
+}
+.study-rate strong {
+  font:
+    500 clamp(2.4rem, 6vw, 4rem)/1.05 Georgia,
+    serif;
+  color: #ffd5e1;
+  font-variant-numeric: tabular-nums;
+}
+.study-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  border: 1px solid var(--line);
+  background: var(--line);
+  border-radius: 1rem;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+.study-numbers div {
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+  padding: 0.85rem;
+  background: #221e25;
+}
+.study-numbers b {
+  font-size: 1.4rem;
+}
+.study-numbers small {
+  font-size: 0.78rem;
+}
+.study-bars {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 1rem;
+}
+.study-bars li > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.study-bars li > div > b {
+  white-space: nowrap;
+}
+.study-bars progress {
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  border: 0;
+  border-radius: 5px;
+  background: #352e38;
+  color: #c67892;
+  display: block;
+  margin: 0.45rem 0;
+}
+.study-bars progress::-webkit-progress-bar {
+  background: #352e38;
+  border-radius: 5px;
+}
+.study-bars progress::-webkit-progress-value {
+  background: #c67892;
+  border-radius: 5px;
+}
+.study-bars progress::-moz-progress-bar {
+  background: #c67892;
+  border-radius: 5px;
+}
+.scenario-detail {
+  margin: 0.85rem 0;
+}
+.scenario-detail summary {
+  cursor: pointer;
+  padding: 0.7rem 0;
+  min-height: 44px;
+  color: var(--rose);
+}
+.rq-presets {
+  margin: 0.75rem 0;
+}
+.rq-presets button {
+  text-align: center;
+}
+@media (max-width: 760px) {
+  .rq-body {
+    padding: 0.4rem max(0.7rem, env(safe-area-inset-right))
+      calc(6rem + env(safe-area-inset-bottom))
+      max(0.7rem, env(safe-area-inset-left));
+  }
+  .rq-top {
+    min-height: 52px;
+    margin-bottom: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .rq-top > .inline {
+    gap: 0.35rem;
+  }
+  .rq-top button {
+    min-height: 44px;
+  }
+  .rq-bottom {
+    padding: 0.25rem 0.25rem max(0.25rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -0.45rem 1.6rem #0004;
+  }
+  .rq-bottom button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.18rem;
+    min-width: 0;
+    min-height: 49px;
+    color: var(--muted);
+    font-size: clamp(0.62rem, 2.7vw, 0.77rem);
+    padding: 0.2rem;
+  }
+  .rq-bottom button[aria-current='page'] {
+    color: #ffd4e1;
+    background: #422330;
+  }
+  .rq-bottom button span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rq-sheet,
+  .rq-modal:not(.date-panel) {
+    position: fixed;
+    inset: auto 0 0;
+    border-radius: 1.35rem 1.35rem 0 0;
+    width: min(100%, 32rem);
+    max-width: 100%;
+    margin: 0 auto;
+    max-height: 90dvh;
+    padding: 0.8rem 0.85rem max(1rem, env(safe-area-inset-bottom));
+  }
+  .rq-modal input:not([type='checkbox']),
+  .rq-modal select,
+  .rq-modal textarea {
+    font-size: 1rem;
+  }
+  .rq-segment {
+    width: 100%;
+  }
+  .rq-segment button {
+    padding: 0.45rem 0.24rem;
+    font-size: 0.86rem;
+  }
+  .study-numbers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .journal-row {
+    align-items: flex-start;
+  }
+  .mark-actions {
+    flex-direction: column;
+  }
+  .mark-actions button {
+    padding: 0.4rem 0.68rem;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .rq-sheet[open],
+  .academy-tabs + .rq-card {
+    animation: rq-surface-in 0.17s ease-out;
+  }
+  @keyframes rq-surface-in {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.desk-shortcuts {
+  display: flex;
+  gap: 0.55rem;
+  margin: -0.25rem 0 1rem;
+  flex-wrap: wrap;
+}
+.desk-shortcuts button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+}
+.desk-shortcuts svg {
+  color: var(--rose);
+}
+.study-pattern {
+  margin-top: 0.7rem;
+  border-left: 2px solid var(--amber);
+  padding: 0.15rem 0.7rem;
+}
+.study-pattern p {
+  margin: 0.25rem 0;
+}
+@media (max-width: 760px) {
+  .desk-shortcuts button {
+    flex: 1;
+    padding: 0.4rem 0.2rem;
+    justify-content: center;
+    font-size: 0.85rem;
+  }
+}
+.rq-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 44px;
+}
+.rq-choice-options {
+  display: grid;
+  gap: 0.35rem;
+}
+.rq-choice-options button {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+}
+.rq-choice-options [aria-pressed='true'] {
+  color: #ffe1ea;
+  background: #4a2735;
+}

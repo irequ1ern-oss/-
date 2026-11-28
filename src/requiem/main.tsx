@@ -1,14 +1,8 @@
+import { Choice, strategies } from './Choice';
 import { render } from 'preact';
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import { moscowClock, toMinutes } from '../core/time';
-import {
-  api,
-  download,
-  titles,
-  type Identity,
-  type Desk,
-  type Fields,
-} from './client';
+import { api, download, type Identity, type Desk, type Fields } from './client';
 import { Editor } from './Editor';
 import {
   Attendance,
@@ -37,19 +31,11 @@ import { PushControl } from './PushControl';
 import { Shay } from './Shay';
 import '../ui/fonts.css';
 import './requiem.css';
-const sections: Record<string, string> = {
-  desk: 'Обзор',
-  academy: 'Учёба',
-  chronos: 'Сценарии',
-  transit: 'Дорога',
-  tasks: 'Дела',
-  ledger: 'Время',
-  oracle: 'Oracle',
-  sanctum: 'Архив и заметки',
-  shay: 'Shay',
-  workshop: 'Настройки',
-  admin: 'Управление',
-};
+import './mobile.css';
+import { DatePicker } from '../ui/DatePicker';
+import { Icon } from '../ui/Icon';
+import { Navigation, sections, icons } from './Navigation';
+import { Statistics } from './Statistics';
 function Brand() {
   return (
     <div class="brand">
@@ -205,8 +191,8 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
       id?: string;
       initial?: Fields;
     } | null>(null),
-    [palette, search] = useState(false),
-    [q, query] = useState(''),
+    [menu, showMenu] = useState<'menu' | 'search' | null>(null),
+    [study, setStudy] = useState<'journal' | 'stats' | 'subjects'>('journal'),
     [focus, filter] = useState(false);
   const [restore, stage] = useState<{
     format: number;
@@ -217,9 +203,10 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
   );
   const selected = valid.includes(page) ? page : initial;
   const navigate = (k: string) => {
-    location.hash = k;
+    if (location.hash.slice(1) !== k) location.hash = k;
     go(k);
-    search(false);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    showMenu(null);
   };
   const run: Runner = useCallback(async (fn) => {
     try {
@@ -253,13 +240,15 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
     };
   }, [reload]);
   useEffect(() => {
-    const nav = () => go(location.hash.slice(1) || initial),
+    const nav = () => {
+        go(location.hash.slice(1) || initial);
+        showMenu(null);
+      },
       key = (e: KeyboardEvent) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
           e.preventDefault();
-          search((x) => !x);
+          showMenu((x) => (x === 'search' ? null : 'search'));
         }
-        if (e.key === 'Escape') search(false);
       };
     const online = () => {
       void run(reload);
@@ -274,8 +263,12 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
     };
   }, [reload, initial]);
   const edit: Edit = (kind, id, initial) => {
-    search(false);
+    showMenu(null);
     open({ kind, id, initial });
+  };
+  const academy = (view: 'journal' | 'stats') => {
+    setStudy(view);
+    navigate('academy');
   };
   const props = d ? { d, edit, run, reload } : null;
   function notebook(file: File | undefined) {
@@ -308,7 +301,7 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
       aria-current={selected === k ? 'page' : undefined}
       onClick={() => navigate(k)}
     >
-      {sections[k]}
+      <Icon name={icons[k]} size={19} /> {sections[k]}
     </button>
   ));
   const config = d?.records.find((r) => r.kind === 'workshop')?.data;
@@ -333,14 +326,7 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
           <strong>{sections[selected]}</strong>
           <div class="inline">
             {u.owner && (
-              <input
-                aria-label="Учебная дата"
-                type="date"
-                value={day}
-                onChange={(e) => {
-                  if (e.currentTarget.value) date(e.currentTarget.value);
-                }}
-              />
+              <DatePicker label="Учебная дата" value={day} onChange={date} />
             )}
             {u.owner && selected !== 'shay' && (
               <button
@@ -351,7 +337,10 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
                 Shay
               </button>
             )}
-            <button onClick={() => search(true)} aria-label="Поиск и команды">
+            <button
+              onClick={() => showMenu('search')}
+              aria-label="Поиск и команды"
+            >
               Поиск <kbd>⌘ K</kbd>
             </button>
           </div>
@@ -385,12 +374,42 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
         {u.owner && !d && !error && <p>Загрузка рабочего пространства…</p>}
         {props && d && (
           <>
-            {selected === 'desk' && <Dashboard {...props} />}
+            {selected === 'desk' && (
+              <Dashboard
+                {...props}
+                journal={() => academy('journal')}
+                stats={() => academy('stats')}
+              />
+            )}
             {selected === 'academy' && (
               <>
-                <Attendance {...props} />
-                <Twin d={d} edit={edit} />
-                {records(['grade', 'teacher', 'observation', 'critical'])}
+                <div class="rq-segment academy-tabs" aria-label="Разделы учёбы">
+                  {(
+                    [
+                      ['journal', 'Журнал'],
+                      ['stats', 'Статистика'],
+                      ['subjects', 'Дисциплины'],
+                    ] as const
+                  ).map(([key, name]) => (
+                    <button
+                      key={key}
+                      aria-pressed={study === key}
+                      onClick={() => setStudy(key)}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+                {study === 'journal' && <Attendance key={d.date} {...props} />}
+                {study === 'stats' && (
+                  <Statistics d={d} journal={() => setStudy('journal')} />
+                )}
+                {study === 'subjects' && (
+                  <>
+                    <Twin d={d} edit={edit} />
+                    {records(['grade', 'teacher', 'observation', 'critical'])}
+                  </>
+                )}
               </>
             )}
             {selected === 'chronos' && (
@@ -398,11 +417,11 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
                 <Simulator key={d.date} {...props} />
                 <section class="rq-card">
                   <h2>Активная стратегия</h2>
-                  <select
-                    aria-label="Активная стратегия"
+                  <Choice
+                    title="Активная стратегия"
+                    options={strategies(d)}
                     value={layout(d).strategy}
-                    onChange={(e) => {
-                      const strategy = e.currentTarget.value;
+                    change={(strategy) => {
                       run(async () => {
                         const item = d.records.find((r) => r.kind === 'layout');
                         await api('changes', {
@@ -422,16 +441,7 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
                         await reload();
                       });
                     }}
-                  >
-                    {d.strategies.map((s) => (
-                      <option>{s}</option>
-                    ))}
-                    {d.records
-                      .filter((r) => r.kind === 'strategy')
-                      .map((r) => (
-                        <option value={r.id}>{String(r.data.title)}</option>
-                      ))}
-                  </select>
+                  />
                 </section>
                 {records(['strategy', 'decision'])}
                 <Horizon d={d} run={run} />
@@ -504,7 +514,7 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
             )}
             {selected === 'ledger' && (
               <>
-                <Reports {...props} />
+                <Reports key={d.date} {...props} />
                 {records(['ledger', 'pulse'])}
               </>
             )}
@@ -601,68 +611,16 @@ function Account({ u, logout }: { u: Identity; logout: () => void }) {
           <Shay edit={edit} reload={reload} />
         </aside>
       )}
-      <nav class="rq-bottom" aria-label="Быстрая навигация">
-        {valid.slice(0, 4).map((k) => (
-          <button
-            aria-current={selected === k ? 'page' : undefined}
-            onClick={() => navigate(k)}
-          >
-            {sections[k]}
-          </button>
-        ))}
-        <button
-          onClick={() => {
-            query('');
-            search(true);
-          }}
-        >
-          Ещё
-        </button>
-      </nav>
-      {palette && (
-        <dialog
-          class="rq-modal"
-          ref={(el) => {
-            if (el && !el.open) el.showModal();
-          }}
-          onCancel={() => search(false)}
-        >
-          <header>
-            <h2>Поиск и команды</h2>
-            <button onClick={() => search(false)}>×</button>
-          </header>
-          <input
-            autoFocus
-            placeholder="Раздел, задача, заметка…"
-            value={q}
-            onInput={(e) => query(e.currentTarget.value)}
-          />
-          {valid
-            .filter((k) => sections[k].toLowerCase().includes(q.toLowerCase()))
-            .map((k) => (
-              <button class="line" onClick={() => navigate(k)}>
-                {sections[k]}
-              </button>
-            ))}
-          {q &&
-            d?.records
-              .filter(
-                (r) =>
-                  ['task', 'note', 'memory'].includes(r.kind) &&
-                  Object.values(r.data)
-                    .join(' ')
-                    .toLowerCase()
-                    .includes(q.toLowerCase()),
-              )
-              .slice(0, 12)
-              .map((r) => (
-                <button class="line" onClick={() => edit(r.kind, r.id)}>
-                  {String(r.data.title)}
-                  <small>{titles[r.kind]}</small>
-                </button>
-              ))}
-        </dialog>
-      )}
+      <Navigation
+        valid={valid}
+        selected={selected}
+        d={d}
+        edit={edit}
+        navigate={navigate}
+        mode={menu}
+        setMode={showMenu}
+        academy={academy}
+      />
       {editor && d && (
         <Editor
           key={editor.kind + editor.id}
@@ -689,7 +647,8 @@ function Root() {
         if (opened() && opened()?.user !== identity.username) lock();
         change(identity);
       } catch {
-        if (active) change(current => current === undefined ? null : current);
+        if (active)
+          change((current) => (current === undefined ? null : current));
       }
     };
     void restore();
@@ -699,7 +658,11 @@ function Root() {
       change(null);
     };
     addEventListener('session-ended', reset);
-    return () => { active = false; removeEventListener('online', restore); removeEventListener('session-ended', reset); };
+    return () => {
+      active = false;
+      removeEventListener('online', restore);
+      removeEventListener('session-ended', reset);
+    };
   }, []);
   useEffect(() => {
     document.title = user?.owner ? 'Requiem' : 'Аккаунт · Учёба';

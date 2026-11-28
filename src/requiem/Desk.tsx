@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'preact/hooks';
+import { Choice, contexts } from './Choice';
+import { Sheet } from './Sheet';
+import { Icon } from '../ui/Icon';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { moscowClock, toMinutes } from '../core/time';
 import {
   api,
@@ -39,7 +42,13 @@ export function layout(d: Desk) {
     ...d.records.find((r) => r.kind === 'layout')?.data,
   } as typeof defaultLayout;
 }
-export function Summary({ p }: { p: Plan }) {
+export function Summary({
+  p,
+  subjects,
+}: {
+  p: Plan;
+  subjects: Desk['subjects'];
+}) {
   return (
     <>
       <strong>
@@ -66,7 +75,8 @@ export function Summary({ p }: { p: Plan }) {
       )}
       {p.impacts.map((v) => (
         <p>
-          {v.subject} · {v.before ?? '—'}% → {v.after}%
+          {subjects[v.subject]?.short ?? v.subject} · {v.before ?? '—'}% →{' '}
+          {v.after}%
         </p>
       ))}
       {[...p.blocked, ...p.reasons, ...p.unknown].map((s) => (
@@ -75,7 +85,14 @@ export function Summary({ p }: { p: Plan }) {
     </>
   );
 }
-export function Dashboard({ d, edit, run, reload }: Props) {
+export function Dashboard({
+  d,
+  edit,
+  run,
+  reload,
+  journal,
+  stats,
+}: Props & { journal: () => void; stats: () => void }) {
   const [clock, tick] = useState(moscowClock());
   useEffect(() => {
     const t = setInterval(() => tick(moscowClock()), 1000);
@@ -182,7 +199,7 @@ export function Dashboard({ d, edit, run, reload }: Props) {
     ),
     plan: () =>
       d.lessons.length ? (
-        <Summary p={plan} />
+        <Summary p={plan} subjects={d.subjects} />
       ) : (
         <p>На выбранный день занятий нет.</p>
       ),
@@ -212,7 +229,8 @@ export function Dashboard({ d, edit, run, reload }: Props) {
       <div class="rq-cover">
         <div class="rq-moon" aria-hidden="true" />
         <p>
-          {context} · {d.date}
+          {contexts.find((c) => c.id === context)?.label} ·{' '}
+          {d.date.split('-').reverse().join('.')}
         </p>
         <h1>
           {
@@ -225,17 +243,24 @@ export function Dashboard({ d, edit, run, reload }: Props) {
           }
         </h1>
         <div class="inline">
-          <select
-            aria-label="Контекст"
+          <Choice
+            title="Режим обзора"
             value={pref.context}
-            onChange={(e) => update({ context: e.currentTarget.value })}
-          >
-            {['auto', 'Dawn', 'Execution', 'Departure', 'Nocturne'].map((o) => (
-              <option value={o}>{o === 'auto' ? 'Автоматически' : o}</option>
-            ))}
-          </select>
+            options={contexts}
+            change={(context) => update({ context })}
+          />
           <button onClick={() => customize(!custom)}>Компоновка</button>
         </div>
+      </div>
+      <div class="desk-shortcuts">
+        <button onClick={journal}>
+          <Icon name="check-circle" size={19} />
+          Отметить урок
+        </button>
+        <button onClick={stats}>
+          <Icon name="trend-up" size={19} />
+          Посещаемость
+        </button>
       </div>
       {custom && (
         <section class="rq-card">
@@ -368,22 +393,39 @@ export function TravelCard({
   );
 }
 export function Attendance({ d, run, reload }: Props) {
-  const [bulk, choose] = useState('present');
-  const now = moscowClock();
-  const allowed = (s: string) =>
-    d.date < now.date || (d.date === now.date && toMinutes(s) <= now.minutes);
+  const [active, choose] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [now, tick] = useState(moscowClock);
+  const lock = useRef(false);
+  useEffect(() => {
+    const timer = setInterval(() => tick(moscowClock()), 15000);
+    return () => clearInterval(timer);
+  }, []);
+  const marks = new Map(
+    d.records
+      .filter((r) => r.kind === 'attendance' && r.data.date === d.date)
+      .map((r) => [String(r.data.start), r]),
+  );
+  const allowed = (start: string) =>
+    d.date < now.date ||
+    (d.date === now.date && toMinutes(start) <= now.minutes);
+  const remaining = d.lessons.filter(
+    (l) => allowed(l.start) && !marks.has(l.start),
+  );
+  const lesson = d.lessons.find((l) => l.start === active);
   function mark(starts: string[], status: string) {
+    if (lock.current) return;
+    lock.current = true;
+    setBusy(true);
+    choose(null);
     run(async () => {
-      const changes: Change[] = d.lessons
-        .filter((l) => starts.includes(l.start) && allowed(l.start))
-        .map((l) => {
-          const id = d.date + '.' + l.start;
-          return {
-            id,
+      try {
+        const changes: Change[] = d.lessons
+          .filter((l) => starts.includes(l.start) && allowed(l.start))
+          .map((l) => ({
+            id: d.date + '.' + l.start,
             kind: 'attendance',
-            version:
-              d.records.find((r) => r.kind === 'attendance' && r.id === id)
-                ?.version ?? 0,
+            version: marks.get(l.start)?.version ?? 0,
             data: {
               date: d.date,
               start: l.start,
@@ -391,66 +433,102 @@ export function Attendance({ d, run, reload }: Props) {
               subject: l.subject,
               status,
             },
-          };
-        });
-      if (changes.length) {
-        await api('changes', { changes });
-        await reload();
+          }));
+        if (changes.length) {
+          await api('changes', { changes });
+          await reload();
+        }
+      } finally {
+        lock.current = false;
+        setBusy(false);
       }
     });
   }
   return (
-    <section class="rq-card">
+    <section class="rq-card rq-journal">
       <h2>Журнал уроков</h2>
-      <div class="inline">
-        <select
-          aria-label="Отметка за день"
-          value={bulk}
-          onChange={(e) => choose(e.currentTarget.value)}
-        >
-          {['present', 'absent', 'late', 'excused'].map((v) => (
-            <option value={v}>{words[v]}</option>
-          ))}
-        </select>
-        <button
-          disabled={!d.lessons.some((l) => allowed(l.start))}
-          onClick={() =>
-            mark(
-              d.lessons.map((l) => l.start),
-              bulk,
-            )
-          }
-        >
-          Отметить прошедшие уроки
-        </button>
-      </div>
-      {d.lessons.map((l) => {
-        const id = d.date + '.' + l.start,
-          m = d.records.find((r) => r.kind === 'attendance' && r.id === id);
-        return (
-          <div class="rq-roll">
-            <span>
-              <small>
-                {l.start} – {l.end}
-              </small>
-              {l.title}
-            </span>
-            <select
-              aria-label={l.start + ' ' + l.title}
-              disabled={!allowed(l.start)}
-              value={String(m?.data.status ?? '')}
-              onChange={(e) => mark([l.start], e.currentTarget.value)}
+      {d.lessons.length ? (
+        <>
+          <p>
+            Отмечено {d.lessons.filter((l) => marks.has(l.start)).length} из{' '}
+            {d.lessons.length} · {d.date.split('-').reverse().join('.')}
+          </p>
+          {remaining.length > 0 && (
+            <button
+              class="journal-bulk"
+              disabled={busy}
+              onClick={() =>
+                mark(
+                  remaining.map((l) => l.start),
+                  'present',
+                )
+              }
             >
-              <option disabled value="">
-                Нет отметки
-              </option>
-              {['present', 'absent', 'late', 'excused'].map((s) => (
-                <option value={s}>{words[s]}</option>
-              ))}
-            </select>
+              <Icon name="check" size={18} /> Был на оставшихся ·{' '}
+              {remaining.length}
+            </button>
+          )}
+          {d.lessons.map((l) => {
+            const status = String(marks.get(l.start)?.data.status ?? '');
+            return (
+              <div class="journal-row" key={l.start}>
+                <div>
+                  <small>
+                    {l.start} – {l.end}
+                    {l.room && ' · ' + l.room}
+                  </small>
+                  <strong>{l.title}</strong>
+                </div>
+                <div class="mark-actions">
+                  {!status && allowed(l.start) && (
+                    <button
+                      disabled={busy}
+                      aria-label={'Был в ' + l.start}
+                      onClick={() => mark([l.start], 'present')}
+                    >
+                      Был
+                    </button>
+                  )}
+                  <button
+                    data-status={status}
+                    disabled={busy || !allowed(l.start)}
+                    aria-label={
+                      'Отметка в ' +
+                      l.start +
+                      (status ? ' · ' + words[status] : '')
+                    }
+                    onClick={() => choose(l.start)}
+                  >
+                    {status
+                      ? words[status]
+                      : allowed(l.start)
+                        ? 'Другая'
+                        : 'Позже'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      ) : (
+        <p>В расписании на этот день нет уроков.</p>
+      )}
+      {lesson && (
+        <Sheet title={'Отметка · ' + lesson.start} close={() => choose(null)}>
+          <p>{lesson.title}</p>
+          <div class="mark-options">
+            {['present', 'absent', 'late', 'excused'].map((s) => (
+              <button
+                key={s}
+                aria-pressed={marks.get(lesson.start)?.data.status === s}
+                onClick={() => mark([lesson.start], s)}
+              >
+                {words[s]}
+              </button>
+            ))}
           </div>
-        );
-      })}
+        </Sheet>
+      )}
     </section>
   );
 }

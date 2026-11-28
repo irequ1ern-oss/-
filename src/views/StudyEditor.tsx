@@ -1,3 +1,4 @@
+import { DatePicker } from '../ui/DatePicker';
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { addDays, isValidDate, toMinutes } from '../core/time';
 import { activeLessons, findNextLessonOfSubject, resolveDay } from '../core/schedule';
@@ -129,9 +130,9 @@ function StudyEditor({ entry, close }: { entry: Entry; close: () => void }) {
       </label>
       {isTask && (
         <div class="study-date">
-          <label class="study-field"><span>Срок сдачи</span>
-            <input type="date" required value={due} onInput={e => setCustomDue(e.currentTarget.value)} />
-          </label>
+          <div class="study-field"><span>Срок сдачи</span>
+            <DatePicker label="Срок сдачи" value={due} today={clock.date} onChange={setCustomDue}/>
+          </div>
           <button type="button" class="study-date__next" onClick={() => setCustomDue(null)}>{nextClass ? 'К следующей паре' : 'На завтра'}</button>
         </div>
       )}

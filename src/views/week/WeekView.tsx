@@ -1,3 +1,4 @@
+import { DatePicker } from '../../ui/DatePicker';
 // Экран «Неделя» (раскладка W2): полоса дней сверху, под ней пары выбранного дня.
 // Дни листаются свайпом по списку пар или нажатием на день; ‹ › в верхней панели — соседние недели.
 
@@ -38,7 +39,11 @@ export function WeekView() {
   // Пока идёт анимация, полоса дней и заголовок уже показывают новый день.
   const shown = pending?.date ?? selected;
   const monday = startOfWeek(shown);
-  const days = useMemo(() => weekDays(monday, src), [monday, src]);
+  const days = useMemo(() => {
+    const week = weekDays(monday, src);
+    if (!week.some(d => d.date === shown)) week.push(resolveDay(shown, src));
+    return week.sort((a, b) => a.date.localeCompare(b.date));
+  }, [monday, shown, src]);
   const prev = pending?.dir === -1 ? pending.date : shiftStripDay(selected, -1, src);
   const next = pending?.dir === 1 ? pending.date : shiftStripDay(selected, 1, src);
 
@@ -98,6 +103,7 @@ export function WeekView() {
       }
     >
       <div class="week">
+        <div class="week-calendar"><DatePicker label="Дата расписания" value={shown} today={clock.date} onChange={go}/></div>
         <DayStrip
           days={days}
           selected={shown}

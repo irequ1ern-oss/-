@@ -16,6 +16,7 @@ describe('полоса дней на «Неделе»', () => {
     expect(shiftStripDay('2026-10-13', 1, sources())).toBe('2026-10-14');
     expect(shiftStripDay('2026-10-16', 1, sources())).toBe('2026-10-19');
     expect(shiftStripDay('2026-10-12', -1, sources())).toBe('2026-10-09');
+    expect(shiftStripDay('2026-10-17', -1, sources())).toBe('2026-10-16');
   });
 
   it('по умолчанию сегодня, а в выходной — понедельник', () => {

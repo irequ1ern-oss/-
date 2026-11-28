@@ -24,9 +24,8 @@ export function defaultStripDay(today: DateStr, src: ScheduleSources): DateStr {
 export function shiftStripDay(date: DateStr, dir: 1 | -1, src: ScheduleSources): DateStr {
   const monday = startOfWeek(date);
   const days = weekDays(monday, src).map((d) => d.date);
-  const i = days.indexOf(date);
-  const j = i === -1 ? (dir > 0 ? days.length : -1) : i + dir;
-  if (j >= 0 && j < days.length) return days[j];
+  const sameWeek = dir > 0 ? days.find(d => d > date) : days.filter(d => d < date).at(-1);
+  if (sameWeek) return sameWeek;
   const other = weekDays(addDays(monday, dir * 7), src).map((d) => d.date);
   return dir > 0 ? other[0] : other[other.length - 1];
 }
